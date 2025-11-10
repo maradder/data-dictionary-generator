@@ -1,0 +1,104 @@
+# Pre-commit hooks configuration
+# Install: pip install pre-commit
+# Setup: pre-commit install
+# Run manually: pre-commit run --all-files
+# Docs: https://pre-commit.com/
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom YAML tags
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+
+  # Python - Code formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Linter
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      # Formatter
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # Python - Type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.5.0
+          - types-redis>=4.6.0
+        files: ^backend/src/
+        args: [--config-file=backend/pyproject.toml]
+
+  # Python - Security scanning with Bandit
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        args: ['-c', 'backend/pyproject.toml', '-r', 'backend/src/']
+        files: ^backend/
+
+  # Semgrep - Security and bug detection
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.99.0
+    hooks:
+      - id: semgrep
+        name: Semgrep Security Scan
+        args:
+          - --config=p/security-audit
+          - --config=p/owasp-top-ten
+          - --config=p/python
+          - --config=p/react
+          - --config=p/typescript
+          - --error
+          - --skip-unknown-extensions
+        # Run on Python and JavaScript/TypeScript files
+        types_or: [python, javascript, jsx, ts, tsx]
+
+  # Frontend - ESLint
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.17.0
+    hooks:
+      - id: eslint
+        files: ^frontend/
+        types_or: [javascript, jsx, ts, tsx]
+        args: [--fix]
+        additional_dependencies:
+          - eslint@9.36.0
+          - typescript@5.9.3
+          - typescript-eslint@8.45.0
+          - eslint-plugin-react-hooks@5.2.0
+          - eslint-plugin-react-refresh@0.4.22
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package-lock.json
+
+# Global configuration
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+default_stages: [pre-commit]
+
+# Configure which hooks run at which stage
+stages:
+  - pre-commit
+  - pre-push
+
+ci:
+  skip: [mypy, eslint]  # Skip slow hooks in CI

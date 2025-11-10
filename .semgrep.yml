@@ -1,0 +1,16 @@
+# Semgrep Configuration for Data Dictionary Generator
+# Docs: https://semgrep.dev/docs/writing-rules/rule-syntax/
+
+# This file uses Semgrep Registry rulesets
+# Run with: semgrep --config .semgrep.yml
+
+rules:
+  # Include curated rulesets from Semgrep Registry
+  - id: use-semgrep-registry
+    # Placeholder - actual rules loaded via CLI with --config flags
+    # See .github/workflows/semgrep.yml for the configuration
+    languages: []
+    message: ""
+    severity: INFO
+    patterns:
+      - pattern: placeholder

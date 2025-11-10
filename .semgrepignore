@@ -1,0 +1,58 @@
+# Semgrep ignore patterns
+# Docs: https://semgrep.dev/docs/ignoring-files-folders-code/
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+backend/.venv/
+.Python
+env/
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
+frontend/dist/
+backend/dist/
+
+# Generated files
+backend/alembic/versions/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Lock files and dependencies
+package-lock.json
+yarn.lock
+poetry.lock
+Pipfile.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test coverage
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# Documentation
+docs/_build/
+*.md
+
+# Config files (optional - uncomment if too noisy)
+# *.config.js
+# *.config.ts
+# vite.config.ts
+# tailwind.config.js

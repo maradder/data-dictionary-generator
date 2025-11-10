@@ -1,0 +1,303 @@
+DATA DICTIONARY GENERATOR - SERVICE LAYER ARCHITECTURE
+======================================================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                         API LAYER (FastAPI)                          │
+│                     (Not yet implemented)                             │
+└────────────────────────────────┬────────────────────────────────────┘
+                                 │
+                                 │ HTTP Requests
+                                 │
+┌────────────────────────────────┴────────────────────────────────────┐
+│                         SERVICE LAYER                                │
+│                                                                       │
+│  ┌─────────────────────┐  ┌──────────────────┐                     │
+│  │ DictionaryService   │  │ VersionService   │                     │
+│  ├─────────────────────┤  ├──────────────────┤                     │
+│  │ create_dictionary   │  │ create_version   │                     │
+│  │ get_dictionary      │  │ compare_versions │                     │
+│  │ list_dictionaries   │  │ get_version      │                     │
+│  │ update_dictionary   │  │ list_versions    │                     │
+│  │ delete_dictionary   │  │ get_fields       │                     │
+│  │ get_stats          │  └──────────────────┘                     │
+│  └─────────────────────┘                                            │
+│                                                                       │
+│  ┌─────────────────────┐  ┌──────────────────┐                     │
+│  │ ExportService       │  │ AnalysisService  │                     │
+│  ├─────────────────────┤  ├──────────────────┤                     │
+│  │ export_to_excel     │  │ analyze_file     │                     │
+│  │ export_comparison   │  │ regenerate_ai    │                     │
+│  └─────────────────────┘  │ recalc_metrics   │                     │
+│                            │ get_statistics   │                     │
+│                            └──────────────────┘                     │
+└────────────────────────────────┬────────────────────────────────────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+┌───────────────────┴───┐  ┌────┴─────┐  ┌──┴────────────┐
+│  PROCESSOR LAYER      │  │ MODELS   │  │  EXPORTERS    │
+│                       │  │          │  │               │
+│  - JSONParser         │  │ Dict.    │  │ ExcelExporter │
+│  - TypeInferrer       │  │ Version  │  └───────────────┘
+│  - SemanticDetector   │  │ Field    │
+│  - PIIDetector        │  │ Annot.   │
+│  - QualityAnalyzer    │  └──────────┘
+│  - AIGenerator        │
+└───────────────────────┘
+         │
+         │
+┌────────┴──────────────────────────────────────────────────┐
+│                     DATABASE (PostgreSQL)                  │
+│                                                             │
+│  dictionaries → versions → fields → annotations            │
+└─────────────────────────────────────────────────────────────┘
+
+
+DATA FLOW - DICTIONARY CREATION
+================================
+
+1. API receives JSON file upload
+         ↓
+2. DictionaryService.create_dictionary()
+         ↓
+3. JSONParser extracts fields
+         ↓
+4. For each field:
+   - TypeInferrer → data type
+   - SemanticDetector → semantic type
+   - PIIDetector → PII status
+   - QualityAnalyzer → metrics
+   - AIGenerator → description (optional)
+         ↓
+5. Create records:
+   Dictionary → Version → Fields → Annotations
+         ↓
+6. Commit transaction
+         ↓
+7. Return Dictionary object
+
+
+VERSION COMPARISON FLOW
+========================
+
+1. VersionService.compare_versions(v1, v2)
+         ↓
+2. Fetch all fields for both versions
+         ↓
+3. Create field maps (path → field)
+         ↓
+4. Identify changes:
+   - Added fields (in v2, not v1)
+   - Removed fields (in v1, not v2)
+   - Modified fields (different attributes)
+         ↓
+5. Classify breaking changes:
+   - Type changes
+   - Nullability changes
+   - Removals
+         ↓
+6. Return comparison result
+
+
+EXPORT FLOW
+===========
+
+1. ExportService.export_to_excel()
+         ↓
+2. Fetch Dictionary and Version
+         ↓
+3. Fetch all Fields (ordered)
+         ↓
+4. ExcelExporter formats data:
+   - Data Dictionary sheet
+   - Metadata sheet
+   - Professional formatting
+         ↓
+5. Save Excel file
+         ↓
+6. Return file path
+
+
+SERVICE INTERACTIONS
+====================
+
+DictionaryService
+    ├─> Processors (parse, analyze)
+    ├─> Models (create, update)
+    └─> Database (commit, rollback)
+
+VersionService
+    ├─> Processors (parse, analyze)
+    ├─> Models (versions, fields)
+    └─> Database (queries, compare)
+
+ExportService
+    ├─> Models (read only)
+    ├─> Exporters (format, generate)
+    └─> File System (write)
+
+AnalysisService
+    ├─> Processors (analyze)
+    ├─> Models (read/update)
+    └─> Database (conditional updates)
+
+
+ERROR HANDLING PATTERN
+=======================
+
+try:
+    # 1. Validate inputs
+    if not valid:
+        raise ValidationError()
+    
+    # 2. Process data
+    result = processor.process()
+    
+    # 3. Database operations
+    db.add(entity)
+    db.flush()
+    
+    # 4. Commit transaction
+    db.commit()
+    
+    # 5. Audit log
+    audit_logger.info(...)
+    
+    return result
+
+except KnownError:
+    db.rollback()
+    raise
+    
+except Exception as e:
+    db.rollback()
+    logger.error(...)
+    raise ProcessingError()
+
+
+LOGGING STRUCTURE
+=================
+
+Application Logs:
+    - DEBUG: Detailed processing info
+    - INFO: Major operations
+    - WARNING: Recoverable issues
+    - ERROR: Operation failures
+
+Audit Logs (JSON):
+    {
+        "action": "create_dictionary",
+        "resource_id": "uuid",
+        "user": "john@example.com",
+        "timestamp": "2025-11-08T12:00:00Z",
+        "details": {...}
+    }
+
+
+DEPENDENCY INJECTION
+====================
+
+┌─────────────┐
+│   FastAPI   │
+│   Endpoint  │
+└──────┬──────┘
+       │
+       │ Depends(get_db)
+       ↓
+┌──────┴──────┐
+│   Session   │
+└──────┬──────┘
+       │
+       │ DictionaryService(db)
+       ↓
+┌──────┴──────────┐
+│ DictionaryService│
+│                  │
+│ Processors:      │
+│ - JSONParser     │
+│ - TypeInferrer   │
+│ - etc.          │
+└─────────────────┘
+
+
+TRANSACTION BOUNDARIES
+======================
+
+CREATE:
+┌───────────────┐
+│ BEGIN         │
+│ create_dict   │
+│ create_version│
+│ create_fields │ ← All or nothing
+│ create_annots │
+│ COMMIT        │
+└───────────────┘
+
+UPDATE:
+┌───────────────┐
+│ BEGIN         │
+│ update_entity │
+│ COMMIT        │
+└───────────────┘
+
+READ:
+No transaction needed
+(implicit transaction)
+
+
+KEY DESIGN DECISIONS
+====================
+
+1. Services Own Business Logic
+   - Not in models (anemic models)
+   - Not in API layer (thin controllers)
+   - Centralized in services
+
+2. Dependency Injection
+   - Services receive dependencies
+   - Easy to test with mocks
+   - Clear dependency graph
+
+3. Error Handling
+   - Custom exception hierarchy
+   - Specific error types
+   - Consistent handling
+
+4. Logging
+   - Operational + Audit
+   - Structured format
+   - Context-rich
+
+5. Transactions
+   - Explicit boundaries
+   - Rollback on error
+   - Atomic operations
+
+6. Type Safety
+   - Full type hints
+   - Clear contracts
+   - IDE support
+
+
+PERFORMANCE CHARACTERISTICS
+============================
+
+DictionaryService.create_dictionary():
+    Time: O(n) where n = number of fields
+    Memory: O(1) per field (streaming)
+    Database: 1 transaction, bulk inserts
+
+VersionService.compare_versions():
+    Time: O(n) where n = max(fields_v1, fields_v2)
+    Memory: O(n) for field maps
+    Database: 2 queries (read-only)
+
+ExportService.export_to_excel():
+    Time: O(n) where n = number of fields
+    Memory: O(n) for Excel generation
+    Disk: 1 write operation
+
+AnalysisService.analyze_json_file():
+    Time: O(n) where n = number of fields
+    Memory: O(1) per field (streaming)
+    Database: 0 operations (read-only preview)

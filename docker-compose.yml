@@ -1,0 +1,95 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ddgen_postgres
+    environment:
+      POSTGRES_USER: ddgen_user
+      POSTGRES_PASSWORD: ddgen_password
+      POSTGRES_DB: data_dictionary_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ddgen_user -d data_dictionary_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ddgen_network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: ddgen_redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ddgen_network
+
+  # FastAPI Backend (optional - for containerized development)
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: ddgen_backend
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DATABASE_URL=postgresql://ddgen_user:ddgen_password@postgres:5432/data_dictionary_db
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - ENVIRONMENT=development
+  #     - DEBUG=true
+  #   volumes:
+  #     - ./backend:/app
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - ddgen_network
+
+  # pgAdmin (optional - for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ddgen_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@datadictgen.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - ddgen_network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  ddgen_network:
+    driver: bridge

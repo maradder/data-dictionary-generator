@@ -1,0 +1,523 @@
+[
+  {
+    "user_id": "usr_001",
+    "email": "john.doe@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "age": 28,
+    "phone": "+1-555-123-4567",
+    "ssn": "123-45-6789",
+    "created_at": "2024-01-15T10:30:00Z",
+    "is_active": true,
+    "subscription_tier": "premium",
+    "account_balance": 1250.75,
+    "profile": {
+      "bio": "Software engineer passionate about data",
+      "avatar_url": "https://example.com/avatars/john.jpg",
+      "preferences": {
+        "theme": "dark",
+        "notifications_enabled": true,
+        "language": "en-US"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "123 Main St",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip_code": "94102",
+        "country": "USA",
+        "is_primary": true
+      },
+      {
+        "type": "work",
+        "street": "456 Market St",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip_code": "94105",
+        "country": "USA",
+        "is_primary": false
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-001",
+        "total": 299.99,
+        "items_count": 3,
+        "status": "delivered",
+        "order_date": "2024-01-20T14:22:00Z"
+      }
+    ],
+    "tags": ["early_adopter", "power_user"],
+    "last_login": "2024-11-09T08:15:00Z",
+    "login_count": 142,
+    "revenue_generated": 3456.89,
+    "credit_card_last4": "4242"
+  },
+  {
+    "user_id": "usr_002",
+    "email": "jane.smith@example.com",
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "age": 35,
+    "phone": "+1-555-987-6543",
+    "ssn": "987-65-4321",
+    "created_at": "2024-02-10T09:15:00Z",
+    "is_active": true,
+    "subscription_tier": "basic",
+    "account_balance": 450.00,
+    "profile": {
+      "bio": "Product manager and data enthusiast",
+      "avatar_url": "https://example.com/avatars/jane.jpg",
+      "preferences": {
+        "theme": "light",
+        "notifications_enabled": false,
+        "language": "en-US"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "789 Oak Ave",
+        "city": "Austin",
+        "state": "TX",
+        "zip_code": "78701",
+        "country": "USA",
+        "is_primary": true
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-002",
+        "total": 149.99,
+        "items_count": 1,
+        "status": "shipped",
+        "order_date": "2024-02-15T11:30:00Z"
+      },
+      {
+        "order_id": "ORD-003",
+        "total": 89.99,
+        "items_count": 2,
+        "status": "processing",
+        "order_date": "2024-11-08T16:45:00Z"
+      }
+    ],
+    "tags": ["frequent_buyer"],
+    "last_login": "2024-11-08T19:30:00Z",
+    "login_count": 67,
+    "revenue_generated": 1234.56,
+    "credit_card_last4": "5555"
+  },
+  {
+    "user_id": "usr_003",
+    "email": "bob.johnson@example.com",
+    "first_name": "Bob",
+    "last_name": "Johnson",
+    "age": 42,
+    "phone": "+1-555-246-8135",
+    "ssn": "456-78-9012",
+    "created_at": "2023-11-05T13:45:00Z",
+    "is_active": true,
+    "subscription_tier": "enterprise",
+    "account_balance": 5000.00,
+    "profile": {
+      "bio": null,
+      "avatar_url": "https://example.com/avatars/bob.jpg",
+      "preferences": {
+        "theme": "dark",
+        "notifications_enabled": true,
+        "language": "en-GB"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "321 Pine Rd",
+        "city": "Seattle",
+        "state": "WA",
+        "zip_code": "98101",
+        "country": "USA",
+        "is_primary": true
+      },
+      {
+        "type": "work",
+        "street": "555 Tech Blvd",
+        "city": "Seattle",
+        "state": "WA",
+        "zip_code": "98109",
+        "country": "USA",
+        "is_primary": false
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-004",
+        "total": 999.99,
+        "items_count": 5,
+        "status": "delivered",
+        "order_date": "2023-12-01T10:00:00Z"
+      },
+      {
+        "order_id": "ORD-005",
+        "total": 1499.99,
+        "items_count": 8,
+        "status": "delivered",
+        "order_date": "2024-03-15T14:20:00Z"
+      }
+    ],
+    "tags": ["enterprise_customer", "vip"],
+    "last_login": "2024-11-09T07:00:00Z",
+    "login_count": 289,
+    "revenue_generated": 15678.90,
+    "credit_card_last4": "6789"
+  },
+  {
+    "user_id": "usr_004",
+    "email": "alice.wong@example.com",
+    "first_name": "Alice",
+    "last_name": "Wong",
+    "age": 29,
+    "phone": "+1-555-369-2580",
+    "ssn": "789-01-2345",
+    "created_at": "2024-03-20T15:30:00Z",
+    "is_active": false,
+    "subscription_tier": "basic",
+    "account_balance": 0.00,
+    "profile": {
+      "bio": "Designer and creative professional",
+      "avatar_url": null,
+      "preferences": {
+        "theme": "light",
+        "notifications_enabled": true,
+        "language": "zh-CN"
+      }
+    },
+    "addresses": [],
+    "orders": [],
+    "tags": ["churned"],
+    "last_login": "2024-08-15T12:00:00Z",
+    "login_count": 12,
+    "revenue_generated": 199.99,
+    "credit_card_last4": null
+  },
+  {
+    "user_id": "usr_005",
+    "email": "carlos.garcia@example.com",
+    "first_name": "Carlos",
+    "last_name": "Garcia",
+    "age": 51,
+    "phone": "+1-555-147-2589",
+    "ssn": "321-54-6789",
+    "created_at": "2023-06-12T08:20:00Z",
+    "is_active": true,
+    "subscription_tier": "premium",
+    "account_balance": 2750.50,
+    "profile": {
+      "bio": "Data analyst with 15+ years experience",
+      "avatar_url": "https://example.com/avatars/carlos.jpg",
+      "preferences": {
+        "theme": "dark",
+        "notifications_enabled": false,
+        "language": "es-ES"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "999 Sunset Blvd",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip_code": "90028",
+        "country": "USA",
+        "is_primary": true
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-006",
+        "total": 599.99,
+        "items_count": 4,
+        "status": "delivered",
+        "order_date": "2023-07-04T09:30:00Z"
+      },
+      {
+        "order_id": "ORD-007",
+        "total": 799.99,
+        "items_count": 6,
+        "status": "delivered",
+        "order_date": "2024-01-10T11:15:00Z"
+      },
+      {
+        "order_id": "ORD-008",
+        "total": 1299.99,
+        "items_count": 10,
+        "status": "delivered",
+        "order_date": "2024-05-22T13:45:00Z"
+      }
+    ],
+    "tags": ["power_user", "promoter"],
+    "last_login": "2024-11-09T09:45:00Z",
+    "login_count": 456,
+    "revenue_generated": 9876.54,
+    "credit_card_last4": "8901"
+  },
+  {
+    "user_id": "usr_006",
+    "email": "emma.davis@example.com",
+    "first_name": "Emma",
+    "last_name": "Davis",
+    "age": null,
+    "phone": "+1-555-753-9514",
+    "ssn": "654-32-1098",
+    "created_at": "2024-05-18T16:00:00Z",
+    "is_active": true,
+    "subscription_tier": "premium",
+    "account_balance": 875.25,
+    "profile": {
+      "bio": "Marketing professional exploring data analytics",
+      "avatar_url": "https://example.com/avatars/emma.jpg",
+      "preferences": {
+        "theme": "light",
+        "notifications_enabled": true,
+        "language": "en-US"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "246 Maple Dr",
+        "city": "Denver",
+        "state": "CO",
+        "zip_code": "80202",
+        "country": "USA",
+        "is_primary": true
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-009",
+        "total": 349.99,
+        "items_count": 2,
+        "status": "delivered",
+        "order_date": "2024-06-01T10:20:00Z"
+      }
+    ],
+    "tags": ["new_user"],
+    "last_login": "2024-11-09T10:30:00Z",
+    "login_count": 45,
+    "revenue_generated": 2345.67,
+    "credit_card_last4": "2468"
+  },
+  {
+    "user_id": "usr_007",
+    "email": "michael.brown@example.com",
+    "first_name": "Michael",
+    "last_name": "Brown",
+    "age": 38,
+    "phone": null,
+    "ssn": "147-25-8369",
+    "created_at": "2023-09-08T11:30:00Z",
+    "is_active": true,
+    "subscription_tier": "basic",
+    "account_balance": 150.00,
+    "profile": {
+      "bio": null,
+      "avatar_url": null,
+      "preferences": {
+        "theme": "dark",
+        "notifications_enabled": false,
+        "language": "en-US"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "852 River Rd",
+        "city": "Portland",
+        "state": "OR",
+        "zip_code": "97201",
+        "country": "USA",
+        "is_primary": true
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-010",
+        "total": 79.99,
+        "items_count": 1,
+        "status": "delivered",
+        "order_date": "2023-10-15T14:00:00Z"
+      }
+    ],
+    "tags": ["occasional_user"],
+    "last_login": "2024-10-30T18:00:00Z",
+    "login_count": 23,
+    "revenue_generated": 567.89,
+    "credit_card_last4": "1357"
+  },
+  {
+    "user_id": "usr_008",
+    "email": "sophia.martinez@example.com",
+    "first_name": "Sophia",
+    "last_name": "Martinez",
+    "age": 26,
+    "phone": "+1-555-951-7532",
+    "ssn": "852-96-3741",
+    "created_at": "2024-07-01T12:00:00Z",
+    "is_active": true,
+    "subscription_tier": "premium",
+    "account_balance": 1850.00,
+    "profile": {
+      "bio": "Data scientist building ML models",
+      "avatar_url": "https://example.com/avatars/sophia.jpg",
+      "preferences": {
+        "theme": "dark",
+        "notifications_enabled": true,
+        "language": "en-US"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "135 Tech Park Way",
+        "city": "Boston",
+        "state": "MA",
+        "zip_code": "02108",
+        "country": "USA",
+        "is_primary": true
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-011",
+        "total": 899.99,
+        "items_count": 7,
+        "status": "delivered",
+        "order_date": "2024-07-15T09:00:00Z"
+      },
+      {
+        "order_id": "ORD-012",
+        "total": 499.99,
+        "items_count": 3,
+        "status": "shipped",
+        "order_date": "2024-11-05T15:30:00Z"
+      }
+    ],
+    "tags": ["data_scientist", "early_adopter"],
+    "last_login": "2024-11-09T11:15:00Z",
+    "login_count": 98,
+    "revenue_generated": 4567.89,
+    "credit_card_last4": "9753"
+  },
+  {
+    "user_id": "usr_009",
+    "email": "david.lee@example.com",
+    "first_name": "David",
+    "last_name": "Lee",
+    "age": 44,
+    "phone": "+1-555-159-7536",
+    "ssn": "963-85-2147",
+    "created_at": "2023-04-22T10:45:00Z",
+    "is_active": true,
+    "subscription_tier": "enterprise",
+    "account_balance": 8500.00,
+    "profile": {
+      "bio": "CTO of a growing startup",
+      "avatar_url": "https://example.com/avatars/david.jpg",
+      "preferences": {
+        "theme": "light",
+        "notifications_enabled": true,
+        "language": "en-US"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "777 Innovation Dr",
+        "city": "San Jose",
+        "state": "CA",
+        "zip_code": "95113",
+        "country": "USA",
+        "is_primary": true
+      },
+      {
+        "type": "work",
+        "street": "888 Silicon Valley Blvd",
+        "city": "San Jose",
+        "state": "CA",
+        "zip_code": "95110",
+        "country": "USA",
+        "is_primary": false
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-013",
+        "total": 2999.99,
+        "items_count": 15,
+        "status": "delivered",
+        "order_date": "2023-05-10T08:30:00Z"
+      },
+      {
+        "order_id": "ORD-014",
+        "total": 3999.99,
+        "items_count": 20,
+        "status": "delivered",
+        "order_date": "2024-02-20T10:00:00Z"
+      }
+    ],
+    "tags": ["enterprise_customer", "vip", "tech_leader"],
+    "last_login": "2024-11-09T07:30:00Z",
+    "login_count": 567,
+    "revenue_generated": 34567.89,
+    "credit_card_last4": "1111"
+  },
+  {
+    "user_id": "usr_010",
+    "email": "olivia.taylor@example.com",
+    "first_name": "Olivia",
+    "last_name": "Taylor",
+    "age": 31,
+    "phone": "+1-555-357-1592",
+    "ssn": "741-85-9632",
+    "created_at": "2024-08-15T14:20:00Z",
+    "is_active": true,
+    "subscription_tier": "basic",
+    "account_balance": 320.50,
+    "profile": {
+      "bio": "Business analyst learning data skills",
+      "avatar_url": "https://example.com/avatars/olivia.jpg",
+      "preferences": {
+        "theme": "light",
+        "notifications_enabled": false,
+        "language": "en-US"
+      }
+    },
+    "addresses": [
+      {
+        "type": "home",
+        "street": "468 Lakeview Ave",
+        "city": "Chicago",
+        "state": "IL",
+        "zip_code": "60601",
+        "country": "USA",
+        "is_primary": true
+      }
+    ],
+    "orders": [
+      {
+        "order_id": "ORD-015",
+        "total": 199.99,
+        "items_count": 2,
+        "status": "processing",
+        "order_date": "2024-11-07T16:00:00Z"
+      }
+    ],
+    "tags": ["new_user"],
+    "last_login": "2024-11-08T20:00:00Z",
+    "login_count": 8,
+    "revenue_generated": 345.67,
+    "credit_card_last4": "2222"
+  }
+]

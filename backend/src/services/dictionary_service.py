@@ -26,6 +26,7 @@ from src.models.field import Field
 from src.models.version import Version
 from src.processors.ai_generator import AIDescriptionGenerator
 from src.processors.json_parser import JSONParser
+from src.processors.mongodb_parser import MongoDBParser
 from src.processors.pii_detector import PIIDetector
 from src.processors.quality_analyzer import QualityAnalyzer
 from src.processors.semantic_detector import SemanticTypeDetector
@@ -125,7 +126,16 @@ class DictionaryService:
             # Step 1: Parse JSON
             logger.info("Parsing JSON file")
             try:
-                parse_result = self.json_parser.parse_file(file_path)
+                # Detect MongoDB Extended JSON format
+                is_mongodb_format = self._detect_mongodb_format(file_path)
+
+                # Use appropriate parser
+                if is_mongodb_format:
+                    logger.info("Using MongoDB Extended JSON parser")
+                    mongodb_parser = MongoDBParser()
+                    parse_result = mongodb_parser.parse_file(file_path)
+                else:
+                    parse_result = self.json_parser.parse_file(file_path)
             except Exception as e:
                 logger.error(f"JSON parsing failed: {e}")
                 raise ProcessingError(
@@ -404,6 +414,37 @@ class DictionaryService:
 
         schema_str = "|".join(field_signatures)
         return hashlib.sha256(schema_str.encode()).hexdigest()
+
+    def _detect_mongodb_format(self, file_path: Path) -> bool:
+        """
+        Detect if file contains MongoDB Extended JSON format.
+
+        Checks first 8KB of file for MongoDB type markers like $oid, $date, etc.
+
+        Args:
+            file_path: Path to JSON file
+
+        Returns:
+            True if MongoDB markers are detected, False otherwise
+        """
+        mongodb_markers = {b'"$oid"', b'"$date"', b'"$numberLong"', b'"$numberDecimal"', b'"$binary"'}
+
+        try:
+            with open(file_path, 'rb') as f:
+                # Read first 8KB
+                sample = f.read(8192)
+
+                # Check for any MongoDB markers
+                for marker in mongodb_markers:
+                    if marker in sample:
+                        logger.info(f"MongoDB Extended JSON format detected in {file_path.name}")
+                        return True
+
+                return False
+
+        except Exception as e:
+            logger.warning(f"Error detecting MongoDB format: {e}")
+            return False
 
     def get_dictionary(self, dictionary_id: UUID) -> Dictionary:
         """

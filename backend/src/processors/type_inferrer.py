@@ -39,6 +39,18 @@ class TypeInferrer:
         most_common_type, count = type_counts.most_common(1)[0]
         confidence = (count / total) * 100
 
+        # MongoDB type mapping (with high confidence)
+        if most_common_type == 'mongodb_objectid':
+            return ('objectid', 95.0)
+        elif most_common_type == 'mongodb_date':
+            return ('datetime', 95.0)
+        elif most_common_type == 'mongodb_long':
+            return ('integer', 95.0)
+        elif most_common_type == 'mongodb_decimal':
+            return ('decimal', 95.0)
+        elif most_common_type == 'mongodb_binary':
+            return ('binary', 95.0)
+
         # Type hierarchy: if integer and float both present, use float
         if 'integer' in type_counts and 'float' in type_counts:
             return ('float', (type_counts['integer'] + type_counts['float']) / total * 100)

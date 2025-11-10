@@ -143,7 +143,7 @@ async def create_dictionary(
     if not file.filename.endswith((".json", ".jsonl", ".ndjson")):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Only JSON files are supported (.json, .jsonl, .ndjson)",
+            detail="Only JSON files are supported (.json, .jsonl, .ndjson). MongoDB Extended JSON format is auto-detected.",
         )
 
     # Validate file size

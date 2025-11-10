@@ -7,6 +7,7 @@ and extracting metadata for data dictionary generation.
 
 from .ai_generator import AIDescriptionGenerator
 from .json_parser import FieldMetadata, JSONParser
+from .mongodb_parser import MongoDBFieldMetadata, MongoDBParser
 from .pii_detector import PIIDetector
 from .quality_analyzer import QualityAnalyzer
 from .semantic_detector import SemanticTypeDetector
@@ -15,6 +16,8 @@ from .type_inferrer import TypeInferrer
 __all__ = [
     "JSONParser",
     "FieldMetadata",
+    "MongoDBParser",
+    "MongoDBFieldMetadata",
     "TypeInferrer",
     "SemanticTypeDetector",
     "PIIDetector",

@@ -148,6 +148,9 @@ export function DictionaryUploadPage() {
                     <li>
                       <strong>.ndjson</strong> - Newline Delimited JSON, same as JSON Lines
                     </li>
+                    <li>
+                      <strong>MongoDB Extended JSON</strong> - Automatically detected (supports $oid, $date, $numberLong, $numberDecimal, $binary)
+                    </li>
                   </ul>
                   <div className="bg-muted p-3 rounded-md">
                     <p className="font-medium mb-1">File Size Limit</p>

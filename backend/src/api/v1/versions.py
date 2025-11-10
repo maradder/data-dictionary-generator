@@ -1,5 +1,6 @@
 """Version endpoints for managing dictionary versions."""
 import logging
+import math
 import tempfile
 from pathlib import Path
 from uuid import UUID
@@ -39,6 +40,26 @@ from src.services.version_service import VersionService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def safe_float(value: float | None) -> float | None:
+    """
+    Convert float to None if it's NaN or infinity, otherwise return the float.
+
+    Pydantic validation rejects NaN and infinity values, so we need to
+    convert them to None before passing to response schemas.
+
+    Args:
+        value: Float value that may be NaN or infinity
+
+    Returns:
+        float or None: The value if it's a valid finite float, None otherwise
+    """
+    if value is None:
+        return None
+    if math.isnan(value) or math.isinf(value):
+        return None
+    return float(value)
 
 
 @router.get(
@@ -347,21 +368,21 @@ async def get_version_fields(
                     array_item_type=field.array_item_type,
                     sample_values=sample_values,
                     null_count=field.null_count,
-                    null_percentage=float(field.null_percentage) if field.null_percentage else None,
+                    null_percentage=safe_float(field.null_percentage),
                     total_count=field.total_count,
                     distinct_count=field.distinct_count,
-                    cardinality_ratio=float(field.cardinality_ratio) if field.cardinality_ratio else None,
-                    min_value=float(field.min_value) if field.min_value is not None else None,
-                    max_value=float(field.max_value) if field.max_value is not None else None,
-                    mean_value=float(field.mean_value) if field.mean_value is not None else None,
-                    median_value=float(field.median_value) if field.median_value is not None else None,
-                    std_dev=float(field.std_dev) if field.std_dev is not None else None,
-                    percentile_25=float(field.percentile_25) if field.percentile_25 is not None else None,
-                    percentile_50=float(field.percentile_50) if field.percentile_50 is not None else None,
-                    percentile_75=float(field.percentile_75) if field.percentile_75 is not None else None,
+                    cardinality_ratio=safe_float(field.cardinality_ratio),
+                    min_value=safe_float(field.min_value),
+                    max_value=safe_float(field.max_value),
+                    mean_value=safe_float(field.mean_value),
+                    median_value=safe_float(field.median_value),
+                    std_dev=safe_float(field.std_dev),
+                    percentile_25=safe_float(field.percentile_25),
+                    percentile_50=safe_float(field.percentile_50),
+                    percentile_75=safe_float(field.percentile_75),
                     is_pii=field.is_pii,
                     pii_type=field.pii_type,
-                    confidence_score=float(field.confidence_score) if field.confidence_score else None,
+                    confidence_score=safe_float(field.confidence_score),
                     annotation={
                         "description": annotation.description,
                         "business_name": annotation.business_name,

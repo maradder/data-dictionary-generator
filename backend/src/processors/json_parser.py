@@ -6,6 +6,7 @@ using streaming techniques with ijson, extracting field structure and
 sample values.
 """
 
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -184,9 +185,10 @@ class FieldMetadata:
         elif isinstance(value, int):
             self.types_seen.add('integer')
             self._add_sample(value)
-        elif isinstance(value, float):
+        elif isinstance(value, (float, Decimal)):
+            # ijson returns Decimal for JSON floats
             self.types_seen.add('float')
-            self._add_sample(value)
+            self._add_sample(float(value))
         elif isinstance(value, str):
             self.types_seen.add('string')
             self._add_sample(value)

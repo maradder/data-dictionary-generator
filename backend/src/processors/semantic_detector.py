@@ -73,6 +73,12 @@ class SemanticTypeDetector:
         Returns:
             Semantic type or None
         """
+        # MongoDB-specific semantic type detection
+        if data_type == 'objectid':
+            return 'identifier'
+        elif data_type == 'datetime':
+            return 'timestamp'
+
         if not sample_values:
             return self._detect_from_field_name(field_name, data_type)
 

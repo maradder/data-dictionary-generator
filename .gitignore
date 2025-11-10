@@ -1,0 +1,421 @@
+# ==============================================================================
+# Data Dictionary Generator - Comprehensive .gitignore
+# ==============================================================================
+
+# ==============================================================================
+# Python / Backend
+# ==============================================================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.python-version
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+pytest_cache/
+test-results/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# Pydantic
+__pypackages__/
+
+# ==============================================================================
+# Node.js / Frontend
+# ==============================================================================
+
+# Dependencies
+node_modules/
+jspm_packages/
+bower_components/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+
+# Production
+*.local
+
+# Testing
+coverage/
+.nyc_output
+
+# Parcel
+.parcel-cache/
+
+# Vite
+.vite/
+*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Lock files (optional - uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ==============================================================================
+# Environment Variables & Secrets
+# ==============================================================================
+
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+.envrc
+
+# API keys and secrets
+*.pem
+*.key
+*.crt
+*.cer
+secrets/
+credentials/
+
+# ==============================================================================
+# Database Files
+# ==============================================================================
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL dumps
+*.sql
+*.dump
+
+# Database data directories
+postgres-data/
+pgdata/
+
+# ==============================================================================
+# Docker
+# ==============================================================================
+
+# Docker volumes
+docker-volumes/
+.docker/
+volumes/
+
+# Docker Compose overrides
+docker-compose.override.yml
+
+# ==============================================================================
+# IDEs and Editors
+# ==============================================================================
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# JetBrains (PyCharm, WebStorm, IntelliJ IDEA)
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+*.un~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# TextMate
+*.tmproj
+*.tmproject
+tmtags
+
+# ==============================================================================
+# Operating System Files
+# ==============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+
+# ==============================================================================
+# Temporary Files & Directories
+# ==============================================================================
+
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.cache
+
+# ==============================================================================
+# Logs & Monitoring
+# ==============================================================================
+
+logs/
+*.log
+*.log.*
+log/
+
+# Application logs
+app.log
+error.log
+access.log
+debug.log
+
+# ==============================================================================
+# Export & Generated Files
+# ==============================================================================
+
+# Excel exports
+exports/
+*.xlsx
+*.xls
+*.csv
+
+# PDF exports
+*.pdf
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# ==============================================================================
+# Testing & CI/CD
+# ==============================================================================
+
+# Test artifacts
+test-results/
+test-reports/
+.testresults/
+
+# CI/CD
+.github/workflows/*.log
+.gitlab-ci.yml.log
+
+# ==============================================================================
+# Application Specific
+# ==============================================================================
+
+# Alembic migration temp files
+alembic/versions/*.pyc
+
+# Uploaded files (if storing locally)
+uploads/
+media/
+user-uploads/
+
+# Sample data (uncomment if you don't want to commit)
+# sample-data.json
+
+# Generated documentation
+docs/_build/
+docs/.doctrees/
+
+# ==============================================================================
+# Security & Sensitive Data
+# ==============================================================================
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# SSH keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# GPG keys
+*.gpg
+*.asc
+
+# ==============================================================================
+# Miscellaneous
+# ==============================================================================
+
+# System files
+.Trash/
+.nfs*
+
+# Cache directories
+.cache/
+.parcel-cache/
+.sass-cache/
+.eslintcache
+.stylelintcache
+
+# Lock files for tools
+.tool-versions
+
+# Optional: Uncomment to ignore OS-specific files system-wide
+# **/.DS_Store
+# **/Thumbs.db

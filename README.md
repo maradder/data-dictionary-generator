@@ -115,6 +115,8 @@ This tool bridges the gap between raw data and documentation, making it easier f
 - **[React Router](https://reactrouter.com/)** (v6) - Client-side routing
 - **[Recharts](https://recharts.org/)** - Data visualization library
 
+**Note**: The built frontend is served statically by FastAPI, providing a single-port deployment at http://localhost:8000
+
 ### Infrastructure
 - **[Docker](https://www.docker.com/)** - Containerization
 - **[Docker Compose](https://docs.docker.com/compose/)** - Multi-container orchestration
@@ -159,6 +161,8 @@ docker-compose up -d app
 # Application: http://localhost:8000
 # API Docs: http://localhost:8000/api/docs
 ```
+
+**Architecture Note**: FastAPI serves both the API (at `/api/*`) and the built React frontend (at `/`). This single-port deployment simplifies hosting and eliminates CORS concerns.
 
 Your SQLite database will be persisted in `./data/app.db`.
 
@@ -208,7 +212,23 @@ Backend will be available at:
 - **API Docs**: http://localhost:8000/api/docs
 - **Health Check**: http://localhost:8000/health
 
-#### 2. Setup Frontend (New Terminal)
+#### 2. Setup Frontend (Choose One)
+
+**Option A: Use Built Frontend (Single Port)**
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Build for production
+npm run build
+```
+
+The backend will automatically serve the built frontend at **http://localhost:8000**. This is the recommended approach for most development and all production deployments.
+
+**Option B: Run Frontend Dev Server (Hot Reload)**
 
 ```bash
 cd frontend
@@ -225,13 +245,15 @@ EOF
 npm run dev
 ```
 
-Frontend will be available at: **http://localhost:5173**
+Frontend dev server will be available at **http://localhost:5173** with hot-reload capabilities. Use this for active frontend development only.
 
 #### 3. Test with Sample Data
 
-1. Open http://localhost:5173 in your browser
+1. Open the application in your browser:
+   - **Built frontend**: http://localhost:8000
+   - **Dev server** (if running Option B): http://localhost:5173
 2. Click "Upload New" button
-3. Upload any supported file from the project root
+3. Upload any supported file from `data/samples/`
 4. Fill in the form:
    - Name: "User Analytics Data"
    - Description: "Sample customer data with PII and nested structures"
@@ -285,24 +307,22 @@ alembic upgrade head
 uvicorn src.main:app --host 0.0.0.0 --port 8000
 ```
 
-#### 3. Setup Frontend (Same as Option 2)
+#### 3. Build and Deploy Frontend
 
 ```bash
 cd frontend
 npm install
 
-cat > .env.production <<EOF
-VITE_API_BASE_URL=http://localhost:8000
-EOF
-
 # Build for production
 npm run build
-
-# Preview production build
-npm run preview
 ```
 
-The backend will serve the built frontend automatically at http://localhost:8000
+**Important**: Once built, FastAPI automatically serves the frontend from the `frontend/dist` directory at http://localhost:8000. There's no need to run a separate frontend server in production.
+
+**How it works**:
+- API routes are available at `/api/*`
+- Static assets (JS, CSS, images) are served from `/assets/*`
+- All other routes serve `index.html` for React Router to handle client-side routing
 
 #### When to Use PostgreSQL vs SQLite
 

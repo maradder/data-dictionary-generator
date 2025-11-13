@@ -24,6 +24,7 @@ export function MainLayout() {
     { name: 'Dictionaries', href: '/', icon: '📚' },
     { name: 'Search', href: '/search', icon: '🔍' },
     { name: 'Upload', href: '/upload', icon: '⬆️' },
+    { name: 'Database', href: '/database', icon: '🗄️' },
   ]
 
   const handleQuickSearch = (e: React.FormEvent) => {

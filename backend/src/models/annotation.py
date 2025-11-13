@@ -1,13 +1,13 @@
 """Annotation model - represents user or AI-generated annotations for fields."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import Boolean, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSON, TIMESTAMP, UUID
+from sqlalchemy import Boolean, ForeignKey, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
+from src.core.database import TZDateTime
 
 if TYPE_CHECKING:
     from models.field import Field
@@ -23,22 +23,27 @@ class Annotation(Base):
 
     __tablename__ = "annotations"
 
-    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    field_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("fields.id", ondelete="CASCADE"), nullable=False
+    # Use String(36) for UUID to support both SQLite and PostgreSQL
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    field_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("fields.id", ondelete="CASCADE"), nullable=False
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     business_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
     ai_model_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
     business_owner: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Use generic JSON type (works with both PostgreSQL and SQLite JSON1 extension)
     tags: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Use TZDateTime for cross-database timezone-aware datetimes
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), default=datetime.utcnow
+        TZDateTime, default=lambda: datetime.now(timezone.utc)
     )
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+        TZDateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
     updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

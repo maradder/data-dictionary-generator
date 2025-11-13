@@ -1,0 +1,104 @@
+# ==============================================================================
+# Docker Build Exclusions
+# ==============================================================================
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Documentation (exclude from Docker builds)
+*.md
+docs/
+DOCUMENTATION_REORGANIZATION.md
+*.txt
+!requirements.txt
+!backend/requirements.txt
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.*
+!.env*.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+venv/
+env/
+.venv/
+
+# Node.js (we copy separately in Dockerfile)
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+data/
+postgres-data/
+
+# Logs
+logs/
+*.log
+
+# Test files
+tests/
+*_test.py
+test_*.py
+
+# Sample files (now in samples/ directory)
+samples/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+docker-build.sh
+docker-run-*.sh
+
+# Exports
+exports/
+*.xlsx
+*.xls
+*.csv
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Alembic (keep migrations but exclude compiled Python)
+backend/alembic/versions/*.pyc

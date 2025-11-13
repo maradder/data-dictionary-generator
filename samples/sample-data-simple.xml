@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Simple flat XML structure - Basic user data -->
+<users>
+    <user>
+        <userId>1001</userId>
+        <firstName>John</firstName>
+        <lastName>Doe</lastName>
+        <email>john.doe@example.com</email>
+        <age>32</age>
+        <active>true</active>
+        <country>USA</country>
+    </user>
+    <user>
+        <userId>1002</userId>
+        <firstName>Jane</firstName>
+        <lastName>Smith</lastName>
+        <email>jane.smith@example.com</email>
+        <age>28</age>
+        <active>true</active>
+        <country>Canada</country>
+    </user>
+    <user>
+        <userId>1003</userId>
+        <firstName>Bob</firstName>
+        <lastName>Johnson</lastName>
+        <email>bob.johnson@example.com</email>
+        <age>45</age>
+        <active>false</active>
+        <country>UK</country>
+    </user>
+    <user>
+        <userId>1004</userId>
+        <firstName>Alice</firstName>
+        <lastName>Williams</lastName>
+        <email>alice.williams@example.com</email>
+        <age>35</age>
+        <active>true</active>
+        <country>Australia</country>
+    </user>
+    <user>
+        <userId>1005</userId>
+        <firstName>Charlie</firstName>
+        <lastName>Brown</lastName>
+        <email>charlie.brown@example.com</email>
+        <age>29</age>
+        <active>true</active>
+        <country>USA</country>
+    </user>
+</users>

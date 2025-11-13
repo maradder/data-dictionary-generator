@@ -22,7 +22,7 @@ export const dictionariesApi = {
     id: string,
     includeVersions = false
   ): Promise<Dictionary> => {
-    const response = await apiClient.get(`/api/v1/dictionaries/${id}/`, {
+    const response = await apiClient.get(`/api/v1/dictionaries/${id}`, {
       params: { include_versions: includeVersions },
     })
     return response.data
@@ -62,7 +62,7 @@ export const dictionariesApi = {
     data: DictionaryUpdate
   ): Promise<Dictionary> => {
     const response = await apiClient.put(
-      `/api/v1/dictionaries/${id}/`,
+      `/api/v1/dictionaries/${id}`,
       data
     )
     return response.data
@@ -70,7 +70,7 @@ export const dictionariesApi = {
 
   // Delete dictionary
   delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`/api/v1/dictionaries/${id}/`)
+    await apiClient.delete(`/api/v1/dictionaries/${id}`)
   },
 
   // Export dictionary to Excel
@@ -97,6 +97,26 @@ export const dictionariesApi = {
       `/api/v1/exports/${id}/json`,
       {
         params: options,
+      }
+    )
+    return response.data
+  },
+
+  // Batch export multiple dictionaries to Excel
+  batchExportExcel: async (
+    dictionaryIds: string[],
+    options?: Omit<ExportOptions, 'version_id'>
+  ): Promise<Blob> => {
+    const response = await apiClient.post(
+      '/api/v1/exports/batch/excel',
+      {
+        dictionary_ids: dictionaryIds,
+        include_statistics: options?.include_statistics ?? true,
+        include_annotations: options?.include_annotations ?? true,
+        include_pii_info: options?.include_pii_info ?? true,
+      },
+      {
+        responseType: 'blob',
       }
     )
     return response.data

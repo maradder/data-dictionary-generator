@@ -359,3 +359,169 @@ class ExcelExporter(BaseExporter):
         if dt is None:
             return "N/A"
         return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    def batch_export_dictionaries(
+        self,
+        dictionaries_data: list[dict],
+        output_path: Path,
+    ) -> None:
+        """
+        Export multiple dictionaries to a single Excel workbook.
+
+        Each dictionary gets its own sheet, and a summary sheet is created.
+
+        Args:
+            dictionaries_data: List of dicts with 'dictionary', 'version', and 'fields' keys
+            output_path: Path where the Excel file should be saved
+
+        Raises:
+            IOError: If unable to write to the output path
+            ValueError: If the data is invalid or cannot be exported
+        """
+        # Validate output path
+        self.validate_output_path(output_path)
+
+        # Create workbook
+        wb = Workbook()
+        wb.remove(wb.active)  # Remove default sheet
+
+        # Create summary sheet first
+        summary_sheet = wb.create_sheet("Summary", 0)
+        self._write_summary_sheet(summary_sheet, dictionaries_data)
+
+        # Create a sheet for each dictionary
+        for idx, data in enumerate(dictionaries_data, start=1):
+            dictionary = data["dictionary"]
+            fields = data["fields"]
+            version = data["version"]
+
+            # Create sheet name (sanitize to avoid Excel sheet name issues)
+            sheet_name = self._sanitize_sheet_name(dictionary.name, idx)
+
+            # Create sheet
+            data_sheet = wb.create_sheet(sheet_name, idx)
+
+            # Write dictionary data
+            self._write_data_sheet(data_sheet, fields)
+
+        # Save workbook
+        try:
+            wb.save(output_path)
+        except Exception as e:
+            raise OSError(f"Failed to save Excel file to {output_path}: {e}") from e
+
+    def _sanitize_sheet_name(self, name: str, idx: int) -> str:
+        """
+        Sanitize sheet name to comply with Excel requirements.
+
+        Excel sheet names must be:
+        - 31 characters or less
+        - Cannot contain: \ / ? * [ ]
+
+        Args:
+            name: Original sheet name
+            idx: Index for fallback naming
+
+        Returns:
+            Sanitized sheet name
+        """
+        # Remove invalid characters
+        invalid_chars = ['\\', '/', '?', '*', '[', ']']
+        sanitized = name
+        for char in invalid_chars:
+            sanitized = sanitized.replace(char, '_')
+
+        # Truncate to 31 characters
+        if len(sanitized) > 31:
+            # Leave room for potential suffix
+            sanitized = sanitized[:28] + f"_{idx}"
+
+        # Ensure it's not empty
+        if not sanitized:
+            sanitized = f"Dictionary_{idx}"
+
+        return sanitized
+
+    def _write_summary_sheet(
+        self, ws: Worksheet, dictionaries_data: list[dict]
+    ) -> None:
+        """
+        Write summary sheet with information about all dictionaries.
+
+        Args:
+            ws: Worksheet to write to
+            dictionaries_data: List of dicts with dictionary information
+        """
+        # Title
+        ws.cell(row=1, column=1, value="Batch Export Summary")
+        ws.cell(row=1, column=1).font = Font(size=14, bold=True, color="366092")
+        ws.merge_cells("A1:F1")
+
+        # Export info
+        ws.cell(row=2, column=1, value=f"Export Date: {self._format_datetime(datetime.now(UTC))}")
+        ws.cell(row=2, column=1).font = Font(italic=True, size=10)
+        ws.merge_cells("A2:F2")
+
+        ws.cell(row=3, column=1, value=f"Total Dictionaries: {len(dictionaries_data)}")
+        ws.cell(row=3, column=1).font = Font(bold=True, size=11)
+        ws.merge_cells("A3:F3")
+
+        # Headers
+        headers = [
+            "Dictionary Name",
+            "Version",
+            "Total Fields",
+            "Records Analyzed",
+            "Created At",
+            "Sheet Name"
+        ]
+
+        row_idx = 5
+        for col_idx, header in enumerate(headers, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=header)
+            cell.fill = self.HEADER_FILL
+            cell.font = self.HEADER_FONT
+            cell.alignment = self.ALIGNMENT_CENTER
+            cell.border = self.BORDER_STYLE
+
+        # Data rows
+        for idx, data in enumerate(dictionaries_data, start=1):
+            dictionary = data["dictionary"]
+            version = data["version"]
+            fields = data["fields"]
+
+            row_idx = 5 + idx
+            row_fill = self.ROW_EVEN_FILL if row_idx % 2 == 0 else self.ROW_ODD_FILL
+
+            row_data = [
+                dictionary.name,
+                f"v{version.version_number}",
+                len(fields),
+                dictionary.total_records_analyzed or "N/A",
+                self._format_datetime(dictionary.created_at),
+                self._sanitize_sheet_name(dictionary.name, idx)
+            ]
+
+            for col_idx, value in enumerate(row_data, start=1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                cell.fill = row_fill
+                cell.border = self.BORDER_STYLE
+                if col_idx in [2, 3]:  # Version and Total Fields
+                    cell.alignment = self.ALIGNMENT_CENTER
+                else:
+                    cell.alignment = self.ALIGNMENT_LEFT
+
+        # Set column widths
+        ws.column_dimensions["A"].width = 35
+        ws.column_dimensions["B"].width = 12
+        ws.column_dimensions["C"].width = 15
+        ws.column_dimensions["D"].width = 20
+        ws.column_dimensions["E"].width = 25
+        ws.column_dimensions["F"].width = 35
+
+        # Freeze header row
+        ws.freeze_panes = "A6"
+
+        # Add auto-filter
+        if dictionaries_data:
+            ws.auto_filter.ref = f"A5:F{5 + len(dictionaries_data)}"

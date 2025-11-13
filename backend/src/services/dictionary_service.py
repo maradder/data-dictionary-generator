@@ -7,7 +7,7 @@ workflow for creating, managing, and analyzing data dictionaries.
 
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -25,12 +25,16 @@ from src.models.dictionary import Dictionary
 from src.models.field import Field
 from src.models.version import Version
 from src.processors.ai_generator import AIDescriptionGenerator
+from src.processors.geopackage_parser import GeoPackageParser
 from src.processors.json_parser import JSONParser
 from src.processors.mongodb_parser import MongoDBParser
 from src.processors.pii_detector import PIIDetector
+from src.processors.protobuf_parser import ProtobufParser
 from src.processors.quality_analyzer import QualityAnalyzer
 from src.processors.semantic_detector import SemanticTypeDetector
+from src.processors.sqlite_parser import SQLiteParser
 from src.processors.type_inferrer import TypeInferrer
+from src.processors.xml_parser import XMLParser
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -82,12 +86,13 @@ class DictionaryService:
         created_by: str | None = None,
         generate_ai_descriptions: bool = False,
         metadata: dict[str, Any] | None = None,
+        original_filename: str | None = None,
     ) -> Dictionary:
         """
-        Create dictionary from JSON file.
+        Create dictionary from JSON, XML, SQLite, or GeoPackage file.
 
         Implements the complete workflow from Section 7.1:
-        1. Parse JSON file
+        1. Parse JSON/XML/SQLite/GeoPackage file
         2. Create dictionary record
         3. Create version (v1)
         4. Process each field (type inference, semantic detection, PII detection, quality analysis)
@@ -95,19 +100,20 @@ class DictionaryService:
         6. Save to database with transaction
 
         Args:
-            file_path: Path to JSON file
+            file_path: Path to JSON, XML, SQLite, or GeoPackage file
             name: Dictionary name
             description: Optional description
             created_by: User who created the dictionary
             generate_ai_descriptions: Whether to generate AI descriptions
             metadata: Additional metadata
+            original_filename: Original uploaded filename (if different from file_path.name)
 
         Returns:
             Dictionary: Created dictionary with version and fields
 
         Raises:
             ValidationError: If input validation fails
-            ProcessingError: If JSON processing fails
+            ProcessingError: If JSON/XML/SQLite/GeoPackage processing fails
             DatabaseError: If database operations fail
         """
         logger.info(
@@ -120,26 +126,44 @@ class DictionaryService:
             if not file_path.exists():
                 raise ValidationError(f"File not found: {file_path}")
 
-            if not file_path.suffix.lower() == ".json":
-                raise ValidationError("File must be a JSON file")
+            file_suffix = file_path.suffix.lower()
+            if file_suffix not in [".json", ".xml", ".db", ".sqlite", ".sqlite3", ".gpkg", ".proto", ".desc"]:
+                raise ValidationError("File must be a JSON, XML, SQLite, GeoPackage, or Protocol Buffer file")
 
-            # Step 1: Parse JSON
-            logger.info("Parsing JSON file")
+            # Step 1: Parse file based on format
             try:
-                # Detect MongoDB Extended JSON format
-                is_mongodb_format = self._detect_mongodb_format(file_path)
-
-                # Use appropriate parser
-                if is_mongodb_format:
-                    logger.info("Using MongoDB Extended JSON parser")
-                    mongodb_parser = MongoDBParser()
-                    parse_result = mongodb_parser.parse_file(file_path)
+                if file_suffix == ".xml":
+                    logger.info("Parsing XML file")
+                    xml_parser = XMLParser()
+                    parse_result = xml_parser.parse_file(file_path)
+                elif file_suffix == ".gpkg":
+                    logger.info("Parsing GeoPackage file")
+                    geopackage_parser = GeoPackageParser()
+                    parse_result = geopackage_parser.parse_file(file_path)
+                elif file_suffix in [".db", ".sqlite", ".sqlite3"]:
+                    logger.info("Parsing SQLite database file")
+                    sqlite_parser = SQLiteParser()
+                    parse_result = sqlite_parser.parse_file(file_path)
+                elif file_suffix in [".proto", ".desc"]:
+                    logger.info(f"Parsing Protocol Buffer {file_suffix} file")
+                    protobuf_parser = ProtobufParser(str(file_path))
+                    parse_result = protobuf_parser.parse_file(file_path)
                 else:
-                    parse_result = self.json_parser.parse_file(file_path)
+                    # JSON file - detect MongoDB Extended JSON format
+                    logger.info("Parsing JSON file")
+                    is_mongodb_format = self._detect_mongodb_format(file_path)
+
+                    # Use appropriate parser
+                    if is_mongodb_format:
+                        logger.info("Using MongoDB Extended JSON parser")
+                        mongodb_parser = MongoDBParser()
+                        parse_result = mongodb_parser.parse_file(file_path)
+                    else:
+                        parse_result = self.json_parser.parse_file(file_path)
             except Exception as e:
-                logger.error(f"JSON parsing failed: {e}")
+                logger.error(f"File parsing failed: {e}")
                 raise ProcessingError(
-                    f"Failed to parse JSON file: {str(e)}",
+                    f"Failed to parse file: {str(e)}",
                     details={"file_path": str(file_path)},
                 )
 
@@ -148,7 +172,7 @@ class DictionaryService:
             dictionary = Dictionary(
                 name=name,
                 description=description,
-                source_file_name=file_path.name,
+                source_file_name=original_filename or file_path.name,
                 source_file_size=file_path.stat().st_size,
                 total_records_analyzed=parse_result["total_records"],
                 created_by=created_by,
@@ -373,7 +397,7 @@ class DictionaryService:
                 business_name=business_name,
                 is_ai_generated=True,
                 ai_model_version=self.ai_generator.model,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
             self.db.add(annotation)
@@ -463,7 +487,7 @@ class DictionaryService:
 
         dictionary = (
             self.db.query(Dictionary)
-            .filter(Dictionary.id == dictionary_id)
+            .filter(Dictionary.id == str(dictionary_id))
             .first()
         )
 
@@ -498,8 +522,12 @@ class DictionaryService:
             f"Listing dictionaries: limit={limit}, offset={offset}, sort_by={sort_by}"
         )
 
-        # Build query
-        query = self.db.query(Dictionary)
+        from sqlalchemy.orm import selectinload
+
+        # Build query with eager loading to prevent N+1 queries
+        query = self.db.query(Dictionary).options(
+            selectinload(Dictionary.versions).selectinload(Version.fields)
+        )
 
         # Get total count before pagination
         total = query.count()
@@ -557,7 +585,7 @@ class DictionaryService:
         if metadata is not None:
             dictionary.custom_metadata = metadata
 
-        dictionary.updated_at = datetime.utcnow()
+        dictionary.updated_at = datetime.now(timezone.utc)
 
         try:
             self.db.commit()
@@ -643,14 +671,14 @@ class DictionaryService:
         # Get version count
         version_count = (
             self.db.query(Version)
-            .filter(Version.dictionary_id == dictionary_id)
+            .filter(Version.dictionary_id == str(dictionary_id))
             .count()
         )
 
         # Get latest version
         latest_version = (
             self.db.query(Version)
-            .filter(Version.dictionary_id == dictionary_id)
+            .filter(Version.dictionary_id == str(dictionary_id))
             .order_by(Version.version_number.desc())
             .first()
         )
@@ -661,12 +689,12 @@ class DictionaryService:
         if latest_version:
             field_count = (
                 self.db.query(Field)
-                .filter(Field.version_id == latest_version.id)
+                .filter(Field.version_id == str(latest_version.id))
                 .count()
             )
             pii_field_count = (
                 self.db.query(Field)
-                .filter(Field.version_id == latest_version.id, Field.is_pii)
+                .filter(Field.version_id == str(latest_version.id), Field.is_pii)
                 .count()
             )
 

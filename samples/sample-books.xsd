@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- Root element -->
+  <xs:element name="bookstore">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="book" type="BookType" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Book complex type -->
+  <xs:complexType name="BookType">
+    <xs:sequence>
+      <xs:element name="title" type="xs:string"/>
+      <xs:element name="author" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="price" type="PriceType"/>
+      <xs:element name="isbn" type="ISBNType" minOccurs="0"/>
+      <xs:element name="category" type="CategoryType"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+    <xs:attribute name="lang" type="LanguageType" default="en"/>
+    <xs:attribute name="available" type="AvailabilityType" use="required"/>
+  </xs:complexType>
+
+  <!-- Price simple type with restriction -->
+  <xs:simpleType name="PriceType">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0.01"/>
+      <xs:maxInclusive value="9999.99"/>
+      <xs:fractionDigits value="2"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ISBN simple type with pattern -->
+  <xs:simpleType name="ISBNType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{3}-[0-9]{10}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Category enumeration -->
+  <xs:simpleType name="CategoryType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Programming"/>
+      <xs:enumeration value="Software Engineering"/>
+      <xs:enumeration value="Computer Science"/>
+      <xs:enumeration value="Data Science"/>
+      <xs:enumeration value="Web Development"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Language enumeration -->
+  <xs:simpleType name="LanguageType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="en"/>
+      <xs:enumeration value="es"/>
+      <xs:enumeration value="fr"/>
+      <xs:enumeration value="de"/>
+      <xs:enumeration value="zh"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Availability enumeration -->
+  <xs:simpleType name="AvailabilityType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="yes"/>
+      <xs:enumeration value="no"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

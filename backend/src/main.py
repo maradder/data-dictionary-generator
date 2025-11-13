@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.middlewares import log_requests_middleware
-from src.api.v1 import dictionaries, exports, search, versions
+from src.api.v1 import database, dictionaries, exports, search, versions
 from src.core.config import settings
 from src.core.database import engine
 from src.core.exceptions import (
@@ -195,6 +195,12 @@ app.include_router(
     tags=["Search"],
 )
 
+app.include_router(
+    database.router,
+    prefix="/api/v1/database",
+    tags=["Database Management"],
+)
+
 
 # Health Check Endpoint
 @app.get("/health", tags=["Health"])
@@ -213,21 +219,62 @@ async def health_check() -> dict:
     }
 
 
-# Root Endpoint
-@app.get("/", tags=["Root"])
-async def root() -> dict:
-    """
-    Root endpoint with API information.
+# Static Files - Serve React Frontend
+# This must be AFTER all API routes to avoid shadowing
+import os
+from pathlib import Path
 
-    Returns:
-        dict: API information and available endpoints
-    """
-    return {
-        "message": f"Welcome to {settings.APP_NAME}",
-        "version": settings.APP_VERSION,
-        "docs": "/api/docs",
-        "health": "/health",
-    }
+from fastapi import Request
+from fastapi.responses import FileResponse
+
+# Try Docker path first, then local development path
+frontend_dist_docker = Path("/app/frontend/dist")
+frontend_dist_local = Path(__file__).parent.parent.parent / "frontend" / "dist"
+
+frontend_dist = frontend_dist_docker if frontend_dist_docker.exists() else frontend_dist_local
+
+if frontend_dist.exists() and frontend_dist.is_dir():
+    from fastapi.staticfiles import StaticFiles
+    import logging
+
+    logging.info(f"Serving frontend from {frontend_dist}")
+
+    # Mount static files for assets (CSS, JS, images, etc.)
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+
+    # Catch-all route for SPA - serves index.html for all non-API routes
+    # This enables client-side routing (React Router)
+    @app.get("/{full_path:path}", tags=["Frontend"])
+    async def serve_spa(full_path: str) -> FileResponse:
+        """
+        Serve React SPA for all routes not handled by API.
+
+        This allows React Router to handle client-side routing without 404 errors.
+        """
+        # Check if requesting a specific file (has extension)
+        file_path = frontend_dist / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+
+        # Otherwise, serve index.html for SPA routing
+        return FileResponse(frontend_dist / "index.html")
+else:
+    # Fallback root endpoint if frontend not built
+    @app.get("/", tags=["Root"])
+    async def root() -> dict:
+        """
+        Root endpoint with API information.
+
+        Returns:
+            dict: API information and available endpoints
+        """
+        return {
+            "message": f"Welcome to {settings.APP_NAME}",
+            "version": settings.APP_VERSION,
+            "docs": "/api/docs",
+            "health": "/health",
+            "note": "Frontend not found. Build the frontend and restart the server.",
+        }
 
 
 if __name__ == "__main__":

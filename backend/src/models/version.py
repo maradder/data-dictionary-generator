@@ -1,13 +1,13 @@
 """Version model - represents a version of a dictionary."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSON, TIMESTAMP, UUID
+from sqlalchemy import ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
+from src.core.database import TZDateTime
 
 if TYPE_CHECKING:
     from models.dictionary import Dictionary
@@ -23,17 +23,20 @@ class Version(Base):
 
     __tablename__ = "versions"
 
-    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    dictionary_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("dictionaries.id", ondelete="CASCADE"), nullable=False
+    # Use String(36) for UUID to support both SQLite and PostgreSQL
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    dictionary_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("dictionaries.id", ondelete="CASCADE"), nullable=False
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     schema_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Use TZDateTime for cross-database timezone-aware datetimes
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), default=datetime.utcnow
+        TZDateTime, default=lambda: datetime.now(timezone.utc)
     )
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Use generic JSON type (works with both PostgreSQL and SQLite JSON1 extension)
     processing_stats: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Relationships

@@ -6,7 +6,7 @@ regenerating AI descriptions, and recalculating quality metrics.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -286,13 +286,13 @@ class AnalysisService:
         if version_id:
             version = (
                 self.db.query(Version)
-                .filter(Version.id == version_id, Version.dictionary_id == dictionary_id)
+                .filter(Version.id == str(version_id), Version.dictionary_id == str(dictionary_id))
                 .first()
             )
         else:
             version = (
                 self.db.query(Version)
-                .filter(Version.dictionary_id == dictionary_id)
+                .filter(Version.dictionary_id == str(dictionary_id))
                 .order_by(Version.version_number.desc())
                 .first()
             )
@@ -358,7 +358,7 @@ class AnalysisService:
                     existing_annotation.business_name = business_name
                     existing_annotation.is_ai_generated = True
                     existing_annotation.ai_model_version = self.ai_generator.model
-                    existing_annotation.updated_at = datetime.utcnow()
+                    existing_annotation.updated_at = datetime.now(timezone.utc)
                     existing_annotation.updated_by = regenerated_by
                 else:
                     # Create new
@@ -449,7 +449,7 @@ class AnalysisService:
         )
 
         # Get version
-        version = self.db.query(Version).filter(Version.id == version_id).first()
+        version = self.db.query(Version).filter(Version.id == str(version_id)).first()
 
         if not version:
             raise NotFoundError(
@@ -460,7 +460,7 @@ class AnalysisService:
         # Get fields
         fields = (
             self.db.query(Field)
-            .filter(Field.version_id == version.id)
+            .filter(Field.version_id == str(version.id))
             .order_by(Field.position)
             .all()
         )
@@ -578,7 +578,7 @@ class AnalysisService:
         logger.debug(f"Getting field statistics for version {version_id}")
 
         # Get version
-        version = self.db.query(Version).filter(Version.id == version_id).first()
+        version = self.db.query(Version).filter(Version.id == str(version_id)).first()
 
         if not version:
             raise NotFoundError(
@@ -587,7 +587,7 @@ class AnalysisService:
             )
 
         # Get fields
-        fields = self.db.query(Field).filter(Field.version_id == version.id).all()
+        fields = self.db.query(Field).filter(Field.version_id == str(version.id)).all()
 
         if not fields:
             return {

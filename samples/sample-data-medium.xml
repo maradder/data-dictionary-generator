@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Medium complexity - User analytics with attributes and nested structures -->
+<analytics xmlns:meta="http://example.com/metadata">
+    <user id="U001" status="premium" region="north-america">
+        <profile>
+            <username>john_doe_92</username>
+            <email>john.doe@example.com</email>
+            <phone>+1-555-0123</phone>
+            <registeredDate>2023-01-15T10:30:00Z</registeredDate>
+        </profile>
+        <subscription tier="premium" autoRenew="true">
+            <planName>Professional Plan</planName>
+            <monthlyPrice>29.99</monthlyPrice>
+            <startDate>2023-01-15</startDate>
+            <endDate>2024-01-15</endDate>
+        </subscription>
+        <activity>
+            <lastLogin>2024-01-10T14:22:35Z</lastLogin>
+            <loginCount>342</loginCount>
+            <totalSpent>899.70</totalSpent>
+        </activity>
+        <preferences>
+            <language>en-US</language>
+            <timezone>America/New_York</timezone>
+            <notifications enabled="true"/>
+        </preferences>
+    </user>
+    <user id="U002" status="free" region="europe">
+        <profile>
+            <username>jane_smith</username>
+            <email>jane.smith@example.co.uk</email>
+            <phone>+44-20-7946-0958</phone>
+            <registeredDate>2023-03-22T08:15:00Z</registeredDate>
+        </profile>
+        <subscription tier="free" autoRenew="false">
+            <planName>Free Plan</planName>
+            <monthlyPrice>0.00</monthlyPrice>
+            <startDate>2023-03-22</startDate>
+            <endDate></endDate>
+        </subscription>
+        <activity>
+            <lastLogin>2024-01-12T09:45:12Z</lastLogin>
+            <loginCount>89</loginCount>
+            <totalSpent>0.00</totalSpent>
+        </activity>
+        <preferences>
+            <language>en-GB</language>
+            <timezone>Europe/London</timezone>
+            <notifications enabled="false"/>
+        </preferences>
+    </user>
+    <user id="U003" status="premium" region="asia-pacific">
+        <profile>
+            <username>tanaka_hiroshi</username>
+            <email>tanaka.h@example.jp</email>
+            <phone>+81-3-1234-5678</phone>
+            <registeredDate>2022-11-05T03:20:00Z</registeredDate>
+        </profile>
+        <subscription tier="premium" autoRenew="true">
+            <planName>Professional Plan</planName>
+            <monthlyPrice>29.99</monthlyPrice>
+            <startDate>2022-11-05</startDate>
+            <endDate>2024-11-05</endDate>
+        </subscription>
+        <activity>
+            <lastLogin>2024-01-13T01:30:22Z</lastLogin>
+            <loginCount>567</loginCount>
+            <totalSpent>1245.80</totalSpent>
+        </activity>
+        <preferences>
+            <language>ja-JP</language>
+            <timezone>Asia/Tokyo</timezone>
+            <notifications enabled="true"/>
+        </preferences>
+    </user>
+    <user id="U004" status="trial" region="south-america">
+        <profile>
+            <username>maria_garcia</username>
+            <email>maria.garcia@example.com.br</email>
+            <phone>+55-11-98765-4321</phone>
+            <registeredDate>2024-01-01T12:00:00Z</registeredDate>
+        </profile>
+        <subscription tier="trial" autoRenew="false">
+            <planName>Trial Plan</planName>
+            <monthlyPrice>0.00</monthlyPrice>
+            <startDate>2024-01-01</startDate>
+            <endDate>2024-01-31</endDate>
+        </subscription>
+        <activity>
+            <lastLogin>2024-01-13T18:15:45Z</lastLogin>
+            <loginCount>23</loginCount>
+            <totalSpent>0.00</totalSpent>
+        </activity>
+        <preferences>
+            <language>pt-BR</language>
+            <timezone>America/Sao_Paulo</timezone>
+            <notifications enabled="true"/>
+        </preferences>
+    </user>
+    <user id="U005" status="premium" region="europe">
+        <profile>
+            <username>hans_mueller</username>
+            <email>h.mueller@example.de</email>
+            <phone>+49-30-12345678</phone>
+            <registeredDate>2023-06-18T14:45:00Z</registeredDate>
+        </profile>
+        <subscription tier="premium" autoRenew="true">
+            <planName>Enterprise Plan</planName>
+            <monthlyPrice>99.99</monthlyPrice>
+            <startDate>2023-06-18</startDate>
+            <endDate>2024-06-18</endDate>
+        </subscription>
+        <activity>
+            <lastLogin>2024-01-12T16:30:10Z</lastLogin>
+            <loginCount>412</loginCount>
+            <totalSpent>2399.76</totalSpent>
+        </activity>
+        <preferences>
+            <language>de-DE</language>
+            <timezone>Europe/Berlin</timezone>
+            <notifications enabled="true"/>
+        </preferences>
+    </user>
+</analytics>

@@ -108,10 +108,13 @@ async def list_versions(
             detail=f"Dictionary {dictionary_id} not found",
         )
     except Exception as e:
-        logger.error(f"Error listing versions for dictionary {dictionary_id}: {e}")
+        logger.error(
+            f"Error listing versions for dictionary {dictionary_id}: {e}",
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve versions",
+            detail=f"Failed to retrieve versions: {str(e)}",
         )
 
 
@@ -220,10 +223,10 @@ async def create_version(
             detail=str(e),
         )
     except Exception as e:
-        logger.error(f"Error creating version: {e}")
+        logger.error(f"Error creating version: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create version",
+            detail=f"Failed to create version: {str(e)}",
         )
 
 
@@ -283,10 +286,10 @@ async def get_version(
             detail=f"Version {version_id} not found",
         )
     except Exception as e:
-        logger.error(f"Error retrieving version {version_id}: {e}")
+        logger.error(f"Error retrieving version {version_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve version",
+            detail=f"Failed to retrieve version: {str(e)}",
         )
 
 
@@ -329,7 +332,7 @@ async def get_version_fields(
         # First verify the version exists and belongs to the dictionary
         version = version_service.get_version(version_id)
 
-        if not version or version.dictionary_id != dictionary_id:
+        if not version or version.dictionary_id != str(dictionary_id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Version {version_id} not found for dictionary {dictionary_id}",
@@ -384,14 +387,14 @@ async def get_version_fields(
                     pii_type=field.pii_type,
                     confidence_score=safe_float(field.confidence_score),
                     annotation={
-                        "description": annotation.description,
-                        "business_name": annotation.business_name,
-                        "is_ai_generated": annotation.is_ai_generated,
-                        "ai_model_version": annotation.ai_model_version,
-                        "tags": annotation.tags.get("tags", []) if annotation.tags else None,
-                        "business_owner": annotation.business_owner,
-                        "updated_at": annotation.updated_at,
-                        "updated_by": annotation.updated_by,
+                        "description": annotation.description if annotation else None,
+                        "business_name": annotation.business_name if annotation else None,
+                        "is_ai_generated": annotation.is_ai_generated if annotation else False,
+                        "ai_model_version": annotation.ai_model_version if annotation else None,
+                        "tags": annotation.tags.get("tags", []) if annotation and annotation.tags else None,
+                        "business_owner": annotation.business_owner if annotation else None,
+                        "updated_at": annotation.updated_at if annotation else None,
+                        "updated_by": annotation.updated_by if annotation else None,
                     } if annotation else None,
                 )
             )
@@ -426,10 +429,19 @@ async def get_version_fields(
             detail=f"Version {version_id} not found",
         )
     except Exception as e:
-        logger.error(f"Error retrieving fields for version {version_id}: {e}")
+        logger.error(
+            f"Error retrieving fields for version {version_id}: {e}",
+            exc_info=True,
+            extra={
+                "version_id": str(version_id),
+                "dictionary_id": str(dictionary_id),
+                "limit": limit,
+                "offset": offset,
+            }
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve version fields",
+            detail=f"Failed to retrieve version fields: {str(e)}",
         )
 
 
@@ -509,9 +521,10 @@ async def compare_versions(
         )
     except Exception as e:
         logger.error(
-            f"Error comparing versions {version_1} and {version_2} for dictionary {dictionary_id}: {e}"
+            f"Error comparing versions {version_1} and {version_2} for dictionary {dictionary_id}: {e}",
+            exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to compare versions",
+            detail=f"Failed to compare versions: {str(e)}",
         )

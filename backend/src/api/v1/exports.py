@@ -5,12 +5,14 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    Body,
     Depends,
     HTTPException,
     Query,
     status,
 )
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from src.api.dependencies import (
     get_current_user,
@@ -22,6 +24,14 @@ from src.services.export_service import ExportService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+class BatchExportRequest(BaseModel):
+    """Request model for batch export."""
+    dictionary_ids: list[UUID]
+    include_statistics: bool = True
+    include_annotations: bool = True
+    include_pii_info: bool = True
 
 
 @router.get(
@@ -252,4 +262,82 @@ async def export_version_comparison(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to export version comparison",
+        )
+
+
+@router.post(
+    "/batch/excel",
+    response_class=FileResponse,
+    summary="Batch export to Excel",
+    description="Export multiple dictionaries to a single Excel workbook with each dictionary as a separate sheet.",
+)
+async def batch_export_to_excel(
+    request: BatchExportRequest = Body(...),
+    current_user: str = Depends(get_current_user),
+    export_service: ExportService = Depends(get_export_service),
+) -> FileResponse:
+    """
+    Batch export multiple dictionaries to Excel.
+
+    Creates a single Excel workbook with:
+    - One sheet per dictionary (latest version)
+    - Each sheet formatted like individual exports
+    - Summary sheet with all dictionaries metadata
+
+    Args:
+        request: Batch export request with dictionary IDs and options
+        current_user: Current authenticated user
+        export_service: Export service instance
+
+    Returns:
+        FileResponse: Excel file download with all dictionaries
+
+    Raises:
+        HTTPException: If any dictionary not found or export fails
+    """
+    try:
+        # Validate we have at least one dictionary
+        if not request.dictionary_ids:
+            raise AppValidationError("At least one dictionary ID is required")
+
+        # Export to Excel using service
+        file_path = export_service.batch_export_to_excel(
+            dictionary_ids=request.dictionary_ids,
+            include_statistics=request.include_statistics,
+            include_annotations=request.include_annotations,
+            include_pii_info=request.include_pii_info,
+        )
+
+        # Create filename
+        filename = f"data_dictionaries_batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+        logger.info(
+            f"User {current_user} batch exported {len(request.dictionary_ids)} dictionaries to Excel"
+        )
+
+        return FileResponse(
+            path=str(file_path),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename=filename,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Cache-Control": "no-cache",
+            },
+        )
+
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except AppValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error batch exporting dictionaries to Excel: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to batch export to Excel",
         )

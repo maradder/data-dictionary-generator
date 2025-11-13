@@ -132,3 +132,27 @@ export function useExportDictionaryExcel() {
     },
   })
 }
+
+// Batch export to Excel mutation
+export function useBatchExportExcel() {
+  return useMutation({
+    mutationFn: (dictionaryIds: string[]) => dictionariesApi.batchExportExcel(dictionaryIds),
+    onSuccess: (blob) => {
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+      link.download = `data-dictionaries-batch-${timestamp}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      toast.success('Batch export downloaded successfully')
+    },
+    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
+      const message = error.response?.data?.detail || 'Failed to export dictionaries'
+      toast.error(message)
+    },
+  })
+}

@@ -1,0 +1,95 @@
+// Sample Protocol Buffer schema for an address book
+// This demonstrates various protobuf features including nested messages, enums, and repeated fields
+
+syntax = "proto3";
+
+package tutorial;
+
+// Represents a person in the address book
+message Person {
+  // Unique identifier for the person
+  string name = 1;
+
+  // Unique ID number for this person
+  int32 id = 2;
+
+  // Email address (optional)
+  string email = 3;
+
+  // Phone number type enumeration
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+
+  // Phone number with type
+  message PhoneNumber {
+    string number = 1;
+    PhoneType type = 2;
+  }
+
+  // List of phone numbers
+  repeated PhoneNumber phones = 4;
+
+  // Timestamp of last update (seconds since epoch)
+  int64 last_updated = 5;
+
+  // Whether this person is active
+  bool is_active = 6;
+
+  // Address information (nested message)
+  Address address = 7;
+}
+
+// Represents a physical address
+message Address {
+  string street = 1;
+  string city = 2;
+  string state = 3;
+  string postal_code = 4;
+  string country = 5;
+}
+
+// The address book contains multiple persons
+message AddressBook {
+  repeated Person people = 1;
+
+  // Version of the address book format
+  string version = 2;
+
+  // Creation timestamp
+  int64 created_at = 3;
+}
+
+// Search request message
+message SearchRequest {
+  string query = 1;
+  int32 page_number = 2;
+  int32 results_per_page = 3;
+
+  // Search filters
+  repeated string tags = 4;
+}
+
+// Search response message
+message SearchResponse {
+  repeated Person results = 1;
+  int32 total_results = 2;
+  bool has_more = 3;
+}
+
+// Address book service
+service AddressBookService {
+  // Add a person to the address book
+  rpc AddPerson(Person) returns (Person);
+
+  // Get a person by ID
+  rpc GetPerson(stream SearchRequest) returns (Person);
+
+  // Search for persons
+  rpc SearchPeople(SearchRequest) returns (stream SearchResponse);
+
+  // Bidirectional streaming for real-time updates
+  rpc StreamUpdates(stream Person) returns (stream Person);
+}

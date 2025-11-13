@@ -110,10 +110,10 @@ async def list_dictionaries(
     response_model=DictionaryResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new dictionary",
-    description="Upload a JSON file and create a data dictionary from it.",
+    description="Upload a JSON, XML, SQLite, or GeoPackage file and create a data dictionary from it.",
 )
 async def create_dictionary(
-    file: UploadFile = File(..., description="JSON file to analyze"),
+    file: UploadFile = File(..., description="JSON, XML, SQLite, or GeoPackage file to analyze"),
     name: str = Form(..., description="Dictionary name"),
     description: str | None = Form(None, description="Dictionary description"),
     generate_ai_descriptions: bool = Form(
@@ -123,10 +123,10 @@ async def create_dictionary(
     dictionary_service: DictionaryService = Depends(get_dictionary_service),
 ) -> DictionaryResponse:
     """
-    Create a new dictionary from uploaded JSON file.
+    Create a new dictionary from uploaded JSON, XML, SQLite, or GeoPackage file.
 
     Args:
-        file: JSON file to analyze
+        file: JSON, XML, SQLite, or GeoPackage file to analyze
         name: Dictionary name
         description: Optional description
         generate_ai_descriptions: Whether to generate AI descriptions
@@ -140,10 +140,10 @@ async def create_dictionary(
         HTTPException: If file is invalid, too large, or processing fails
     """
     # Validate file type
-    if not file.filename.endswith((".json", ".jsonl", ".ndjson")):
+    if not file.filename.endswith((".json", ".jsonl", ".ndjson", ".xml", ".db", ".sqlite", ".sqlite3", ".gpkg", ".proto", ".desc")):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Only JSON files are supported (.json, .jsonl, .ndjson). MongoDB Extended JSON format is auto-detected.",
+            detail="Only JSON, XML, SQLite, GeoPackage, and Protocol Buffer files are supported (.json, .jsonl, .ndjson, .xml, .db, .sqlite, .sqlite3, .gpkg, .proto, .desc). MongoDB Extended JSON format is auto-detected.",
         )
 
     # Validate file size
@@ -158,8 +158,10 @@ async def create_dictionary(
             )
 
         # Save to temporary file for processing
+        # Use appropriate suffix based on file type
+        file_suffix = Path(file.filename).suffix
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix=".json", mode="wb"
+            delete=False, suffix=file_suffix, mode="wb"
         ) as temp_file:
             temp_file.write(file_content)
             temp_path = Path(temp_file.name)
@@ -172,6 +174,7 @@ async def create_dictionary(
                 description=description,
                 created_by=current_user,
                 generate_ai_descriptions=generate_ai_descriptions,
+                original_filename=file.filename,
             )
 
             logger.info(f"Created dictionary {dictionary.id} from file {file.filename}")
@@ -438,3 +441,95 @@ async def delete_dictionary(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete dictionary",
         )
+
+
+@router.post(
+    "/import",
+    summary="Import dictionaries from XLSX",
+    description="Import dictionaries from an exported XLSX file to rehydrate the database.",
+)
+async def import_from_excel(
+    file: UploadFile = File(..., description="XLSX file to import"),
+    conflict_mode: str = Query(
+        default="skip",
+        description="How to handle conflicts: 'skip', 'overwrite', or 'fail'",
+        regex="^(skip|overwrite|fail)$",
+    ),
+    imported_by: str | None = Form(None, description="User performing the import"),
+    db: DatabaseSession = None,
+) -> dict:
+    """
+    Import dictionaries from an XLSX export file.
+
+    Supports both single dictionary and batch export formats.
+    The file will be validated before import.
+
+    Args:
+        file: XLSX file to import
+        conflict_mode: How to handle existing dictionaries
+            - skip: Skip dictionaries that already exist
+            - overwrite: Replace existing dictionaries
+            - fail: Return error if any dictionary exists
+        imported_by: Email of user performing import
+
+    Returns:
+        Import results including counts and any errors
+
+    Raises:
+        HTTPException: If file is invalid or import fails
+    """
+    from src.services.import_service import ImportService
+
+    # Validate file type
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an Excel file (.xlsx or .xls)",
+        )
+
+    logger.info(f"Starting import from file: {file.filename}")
+
+    # Save uploaded file to temp location
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
+    try:
+        content = await file.read()
+        temp_file.write(content)
+        temp_file.close()
+
+        # Perform import
+        import_service = ImportService(db)
+        results = import_service.import_from_excel(
+            file_path=temp_file.name,
+            conflict_mode=conflict_mode,
+            imported_by=imported_by,
+        )
+
+        logger.info(
+            f"Import completed: {results.get('dictionaries_imported', 0)} dictionaries imported"
+        )
+
+        return results
+
+    except AppValidationError as e:
+        logger.error(f"Validation error during import: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except FileNotFoundError as e:
+        logger.error(f"File not found during import: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error during import: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Import failed: {str(e)}",
+        )
+    finally:
+        # Clean up temp file
+        import os
+        if os.path.exists(temp_file.name):
+            os.unlink(temp_file.name)

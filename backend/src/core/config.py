@@ -31,10 +31,17 @@ class Settings(BaseSettings):
     RELOAD: bool = False
 
     # Database Configuration
-    DATABASE_URL: str = "postgresql://ddgen_user:ddgen_password@localhost:5432/data_dictionary_db"
+    DATABASE_URL: str = "sqlite:///./data/app.db"
+    # Note: Database type is auto-detected from DATABASE_URL using is_sqlite/is_postgresql properties
+
+    # PostgreSQL-specific settings (ignored for SQLite)
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_ECHO: bool = False
+
+    # SQLite-specific settings
+    SQLITE_TIMEOUT: int = 30
+    SQLITE_CHECK_SAME_THREAD: bool = False
 
     # Redis Configuration
     REDIS_URL: str = "redis://localhost:6380/0"
@@ -57,6 +64,11 @@ class Settings(BaseSettings):
     MAX_RECORDS_TO_ANALYZE: int = 10000
     SAMPLE_SIZE: int = 100
     STREAMING_CHUNK_SIZE: int = 65536
+
+    # XML Processing
+    XML_MAX_DEPTH: int = 10
+    XML_STRIP_NAMESPACES: bool = True
+    XML_ATTRIBUTE_PREFIX: str = "@"
 
     # Export Settings
     EXCEL_MAX_ROWS: int = 1048576
@@ -94,6 +106,21 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         """Check if running in production environment."""
         return self.ENVIRONMENT == "production"
+
+    @property
+    def is_sqlite(self) -> bool:
+        """Check if using SQLite database."""
+        return "sqlite" in self.DATABASE_URL.lower()
+
+    @property
+    def is_postgresql(self) -> bool:
+        """Check if using PostgreSQL database."""
+        return "postgresql" in self.DATABASE_URL.lower()
+
+    @property
+    def batch_commit_size(self) -> int:
+        """Get optimal batch size for bulk operations based on database type."""
+        return 100 if self.is_sqlite else 1000
 
 
 # Global settings instance

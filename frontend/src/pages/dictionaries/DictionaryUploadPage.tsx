@@ -46,6 +46,15 @@ export function DictionaryUploadPage() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
       'application/json': ['.json', '.jsonl', '.ndjson'],
+      'application/xml': ['.xml'],
+      'text/xml': ['.xml'],
+      'application/x-sqlite3': ['.db', '.sqlite', '.sqlite3'],
+      'application/vnd.sqlite3': ['.db', '.sqlite', '.sqlite3'],
+      'application/geopackage+sqlite3': ['.gpkg'],
+      'application/x-gpkg': ['.gpkg'],
+      'application/x-protobuf': ['.proto', '.desc'],
+      'application/protobuf': ['.proto', '.desc'],
+      'text/plain': ['.proto'],
     },
     maxFiles: 1,
     maxSize: 500 * 1024 * 1024, // 500MB
@@ -111,7 +120,7 @@ export function DictionaryUploadPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Upload Dictionary</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Upload a JSON file to create a new data dictionary
+          Upload a JSON, XML, SQLite, GeoPackage, or Protocol Buffer file to create a new data dictionary
         </p>
       </div>
 
@@ -132,39 +141,124 @@ export function DictionaryUploadPage() {
           <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Select JSON File
+              Select File
               <InfoModal title="File Format Requirements">
                 <div className="space-y-4">
                   <p>
-                    Upload your data dictionary in any of the supported JSON formats:
+                    Upload your data in any of the supported formats:
                   </p>
-                  <ul className="list-disc list-inside space-y-2">
-                    <li>
-                      <strong>.json</strong> - Standard JSON format with a single object or array
-                    </li>
-                    <li>
-                      <strong>.jsonl</strong> - JSON Lines format with one JSON object per line
-                    </li>
-                    <li>
-                      <strong>.ndjson</strong> - Newline Delimited JSON, same as JSON Lines
-                    </li>
-                    <li>
-                      <strong>MongoDB Extended JSON</strong> - Automatically detected (supports $oid, $date, $numberLong, $numberDecimal, $binary)
-                    </li>
-                  </ul>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-medium mb-2">JSON Formats:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                        <li>
+                          <strong>.json</strong> - Standard JSON format with a single object or array
+                        </li>
+                        <li>
+                          <strong>.jsonl</strong> - JSON Lines format with one JSON object per line
+                        </li>
+                        <li>
+                          <strong>.ndjson</strong> - Newline Delimited JSON, same as JSON Lines
+                        </li>
+                        <li>
+                          <strong>MongoDB Extended JSON</strong> - Automatically detected (supports $oid, $date, $numberLong, $numberDecimal, $binary)
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-2">XML Format:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                        <li>
+                          <strong>.xml</strong> - Standard XML format with automatic attribute detection
+                        </li>
+                        <li>
+                          Supports nested structures, attributes (with @ prefix), and repeating elements (arrays)
+                        </li>
+                        <li>
+                          Namespaces are automatically stripped for cleaner field names
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-2">SQLite Database Format:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                        <li>
+                          <strong>.db, .sqlite, .sqlite3</strong> - SQLite database files
+                        </li>
+                        <li>
+                          Extracts complete schema including tables, columns, data types, and constraints
+                        </li>
+                        <li>
+                          Captures primary keys, foreign keys, unique constraints, and indexes
+                        </li>
+                        <li>
+                          Samples actual data for quality metrics and statistics
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-2">GeoPackage Format:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                        <li>
+                          <strong>.gpkg</strong> - OGC GeoPackage geospatial database files
+                        </li>
+                        <li>
+                          Built on SQLite with geospatial extensions
+                        </li>
+                        <li>
+                          Detects geometry columns (POINT, LINESTRING, POLYGON, etc.)
+                        </li>
+                        <li>
+                          Extracts coordinate reference systems (CRS/EPSG codes)
+                        </li>
+                        <li>
+                          Captures spatial metadata, bounding boxes, and layer information
+                        </li>
+                        <li>
+                          Perfect for GIS data, vector layers, and spatial databases
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-2">Protocol Buffer Format:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                        <li>
+                          <strong>.proto</strong> - Human-readable Protocol Buffer schema definitions
+                        </li>
+                        <li>
+                          <strong>.desc</strong> - Compiled FileDescriptorSet files
+                        </li>
+                        <li>
+                          Extracts messages, enums, services, and field metadata
+                        </li>
+                        <li>
+                          Supports nested messages, repeated fields, and all protobuf types
+                        </li>
+                        <li>
+                          Preserves field numbers and labels (optional/required/repeated)
+                        </li>
+                        <li>
+                          Detects gRPC services with RPC methods and streaming types
+                        </li>
+                        <li>
+                          Perfect for API schemas, microservice contracts, and data serialization formats
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
                   <div className="bg-muted p-3 rounded-md">
                     <p className="font-medium mb-1">File Size Limit</p>
                     <p className="text-sm">Maximum file size: 500MB</p>
                   </div>
                   <p className="text-sm">
-                    Your file should contain field definitions with properties like field names,
-                    data types, descriptions, and any metadata about your data structure.
+                    The system will automatically analyze your data structure and extract field paths,
+                    types, sample values, and quality metrics.
                   </p>
                 </div>
               </InfoModal>
             </CardTitle>
             <CardDescription>
-              Supported formats: .json, .jsonl, .ndjson (max 500MB)
+              Supported formats: .json, .jsonl, .ndjson, .xml, .db, .sqlite, .sqlite3, .gpkg, .proto, .desc (max 500MB)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -188,10 +282,10 @@ export function DictionaryUploadPage() {
                   ) : (
                     <>
                       <p className="text-base sm:text-lg font-medium">
-                        Drag and drop your JSON file here
+                        Drag and drop your data file here
                       </p>
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        or click to browse your files
+                        JSON, XML, SQLite, GeoPackage, or Protocol Buffer • or click to browse
                       </p>
                     </>
                   )}
@@ -199,6 +293,12 @@ export function DictionaryUploadPage() {
                     <Badge variant="secondary">.json</Badge>
                     <Badge variant="secondary">.jsonl</Badge>
                     <Badge variant="secondary">.ndjson</Badge>
+                    <Badge variant="secondary">.xml</Badge>
+                    <Badge variant="secondary">.db</Badge>
+                    <Badge variant="secondary">.sqlite</Badge>
+                    <Badge variant="secondary">.gpkg</Badge>
+                    <Badge variant="secondary">.proto</Badge>
+                    <Badge variant="secondary">.desc</Badge>
                   </div>
                 </div>
               </div>

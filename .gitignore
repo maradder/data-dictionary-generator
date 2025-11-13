@@ -165,6 +165,9 @@ lerna-debug.log*
 .env.*.local
 .envrc
 
+# Keep example environment files
+!.env*.example
+
 # API keys and secrets
 *.pem
 *.key
@@ -369,12 +372,20 @@ uploads/
 media/
 user-uploads/
 
-# Sample data (uncomment if you don't want to commit)
-# sample-data.json
+# Data directory (runtime data, not source controlled)
+data/
+
+# Sample data files (keep in samples/ directory for reference)
+# Samples directory itself should be committed for examples
 
 # Generated documentation
 docs/_build/
 docs/.doctrees/
+
+# Test scripts (root level test files, not unit tests)
+test_*.py
+!backend/tests/
+!frontend/tests/
 
 # ==============================================================================
 # Security & Sensitive Data

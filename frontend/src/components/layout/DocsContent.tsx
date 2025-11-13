@@ -12,8 +12,8 @@ export function DocsContent() {
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           This application helps you manage, explore, and version your data dictionaries.
-          Upload JSON files containing field definitions, explore field statistics,
-          compare versions, and search across your entire data catalog.
+          Upload JSON, XML, SQLite, GeoPackage, or Protocol Buffer files containing field definitions,
+          explore field statistics, compare versions, and search across your entire data catalog.
         </p>
       </section>
 
@@ -50,12 +50,17 @@ export function DocsContent() {
           <div>
             <h4 className="font-medium mb-1">Supported File Formats</h4>
             <p className="text-muted-foreground">
-              Upload JSON files in the following formats:
+              Upload files in the following formats:
             </p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2 mt-1">
               <li><code className="bg-muted px-1 py-0.5 rounded">.json</code> - Standard JSON format</li>
               <li><code className="bg-muted px-1 py-0.5 rounded">.jsonl</code> - JSON Lines (one object per line)</li>
               <li><code className="bg-muted px-1 py-0.5 rounded">.ndjson</code> - Newline Delimited JSON</li>
+              <li><code className="bg-muted px-1 py-0.5 rounded">.xml</code> - Standard XML format (attributes, nesting, arrays)</li>
+              <li><code className="bg-muted px-1 py-0.5 rounded">.db, .sqlite, .sqlite3</code> - SQLite database files with schema extraction</li>
+              <li><code className="bg-muted px-1 py-0.5 rounded">.gpkg</code> - GeoPackage geospatial database files</li>
+              <li><code className="bg-muted px-1 py-0.5 rounded">.proto</code> - Protocol Buffer schema definitions</li>
+              <li><code className="bg-muted px-1 py-0.5 rounded">.desc</code> - Compiled Protocol Buffer FileDescriptorSet files</li>
             </ul>
             <p className="text-muted-foreground mt-2">
               Maximum file size: <strong>500MB</strong>

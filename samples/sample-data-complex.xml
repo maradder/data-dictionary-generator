@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Complex XML - E-commerce platform with deep nesting, PII, and comprehensive data -->
+<ecommerce version="2.0" xmlns="http://example.com/ecommerce" generated="2024-01-15T12:00:00Z">
+    <customers>
+        <customer customerId="CUST-10001" accountType="premium" verified="true" createdDate="2022-05-15">
+            <personalInfo>
+                <name prefix="Mr.">
+                    <firstName>Jonathan</firstName>
+                    <middleName>Michael</middleName>
+                    <lastName>Anderson</lastName>
+                </name>
+                <birthDate>1985-03-22</birthDate>
+                <gender>M</gender>
+                <ssn>123-45-6789</ssn>
+                <contact priority="1">
+                    <email type="primary" verified="true">jonathan.anderson@email.com</email>
+                    <email type="secondary" verified="false">j.anderson@work.com</email>
+                    <phone type="mobile" country="+1">555-123-4567</phone>
+                    <phone type="home" country="+1">555-987-6543</phone>
+                </contact>
+                <addresses>
+                    <address type="billing" primary="true" addressId="ADDR-001">
+                        <street>123 Main Street</street>
+                        <apartment>Apt 4B</apartment>
+                        <city>New York</city>
+                        <state>NY</state>
+                        <zipCode>10001</zipCode>
+                        <country>USA</country>
+                        <coordinates>
+                            <latitude>40.7589</latitude>
+                            <longitude>-73.9851</longitude>
+                        </coordinates>
+                    </address>
+                    <address type="shipping" primary="false" addressId="ADDR-002">
+                        <street>456 Oak Avenue</street>
+                        <apartment></apartment>
+                        <city>Brooklyn</city>
+                        <state>NY</state>
+                        <zipCode>11201</zipCode>
+                        <country>USA</country>
+                        <coordinates>
+                            <latitude>40.6943</latitude>
+                            <longitude>-73.9249</longitude>
+                        </coordinates>
+                    </address>
+                </addresses>
+            </personalInfo>
+            <accountDetails>
+                <membershipLevel>Platinum</membershipLevel>
+                <joinDate>2022-05-15T14:30:00Z</joinDate>
+                <loyaltyPoints>15420</loyaltyPoints>
+                <creditCard>
+                    <cardNumber>4532-****-****-1234</cardNumber>
+                    <cardType>Visa</cardType>
+                    <expiryDate>2025-12</expiryDate>
+                    <cardholderName>Jonathan M Anderson</cardholderName>
+                </creditCard>
+            </accountDetails>
+            <purchaseHistory>
+                <order orderId="ORD-2024-001" status="delivered" priority="standard">
+                    <orderDate>2024-01-10T09:15:30Z</orderDate>
+                    <items>
+                        <item itemId="PROD-5001" sku="ELEC-LAP-001">
+                            <productName>Ultra Laptop Pro 15</productName>
+                            <category>Electronics</category>
+                            <subcategory>Computers</subcategory>
+                            <quantity>1</quantity>
+                            <unitPrice currency="USD">1299.99</unitPrice>
+                            <discount percentage="10.0">129.99</discount>
+                            <tax>93.60</tax>
+                            <subtotal>1263.60</subtotal>
+                        </item>
+                        <item itemId="PROD-5002" sku="ELEC-ACC-042">
+                            <productName>Wireless Mouse Pro</productName>
+                            <category>Electronics</category>
+                            <subcategory>Accessories</subcategory>
+                            <quantity>2</quantity>
+                            <unitPrice currency="USD">49.99</unitPrice>
+                            <discount percentage="0.0">0.00</discount>
+                            <tax>8.00</tax>
+                            <subtotal>107.98</subtotal>
+                        </item>
+                    </items>
+                    <shipping method="express" carrier="FedEx" trackingNumber="FDX123456789">
+                        <cost>15.99</cost>
+                        <estimatedDelivery>2024-01-12</estimatedDelivery>
+                        <actualDelivery>2024-01-11</actualDelivery>
+                    </shipping>
+                    <payment method="credit_card" transactionId="TXN-98765432">
+                        <amount>1387.57</amount>
+                        <currency>USD</currency>
+                        <processedDate>2024-01-10T09:16:45Z</processedDate>
+                    </payment>
+                    <totals>
+                        <subtotal>1371.58</subtotal>
+                        <tax>101.60</tax>
+                        <shipping>15.99</shipping>
+                        <grandTotal>1489.17</grandTotal>
+                    </totals>
+                </order>
+                <order orderId="ORD-2023-852" status="delivered" priority="standard">
+                    <orderDate>2023-12-20T14:22:10Z</orderDate>
+                    <items>
+                        <item itemId="PROD-3301" sku="BOOK-FIC-221">
+                            <productName>The Great Novel</productName>
+                            <category>Books</category>
+                            <subcategory>Fiction</subcategory>
+                            <quantity>3</quantity>
+                            <unitPrice currency="USD">24.99</unitPrice>
+                            <discount percentage="15.0">11.25</discount>
+                            <tax>5.62</tax>
+                            <subtotal>69.34</subtotal>
+                        </item>
+                    </items>
+                    <shipping method="standard" carrier="USPS" trackingNumber="USPS987654321">
+                        <cost>5.99</cost>
+                        <estimatedDelivery>2023-12-28</estimatedDelivery>
+                        <actualDelivery>2023-12-27</actualDelivery>
+                    </shipping>
+                    <payment method="paypal" transactionId="TXN-11223344">
+                        <amount>80.95</amount>
+                        <currency>USD</currency>
+                        <processedDate>2023-12-20T14:23:35Z</processedDate>
+                    </payment>
+                    <totals>
+                        <subtotal>69.34</subtotal>
+                        <tax>5.62</tax>
+                        <shipping>5.99</shipping>
+                        <grandTotal>80.95</grandTotal>
+                    </totals>
+                </order>
+            </purchaseHistory>
+            <analytics>
+                <lifetimeValue>3245.87</lifetimeValue>
+                <averageOrderValue>541.31</averageOrderValue>
+                <totalOrders>6</totalOrders>
+                <lastPurchase>2024-01-10</lastPurchase>
+                <customerSegment>High-Value</customerSegment>
+                <churnRisk score="0.12">Low</churnRisk>
+                <preferences>
+                    <communication>
+                        <emailMarketing>true</emailMarketing>
+                        <smsMarketing>false</smsMarketing>
+                        <pushNotifications>true</pushNotifications>
+                    </communication>
+                    <favoriteCategories>
+                        <category weight="0.45">Electronics</category>
+                        <category weight="0.30">Books</category>
+                        <category weight="0.25">Home &amp; Garden</category>
+                    </favoriteCategories>
+                </preferences>
+            </analytics>
+        </customer>
+        <customer customerId="CUST-10002" accountType="standard" verified="true" createdDate="2023-08-03">
+            <personalInfo>
+                <name prefix="Ms.">
+                    <firstName>Sarah</firstName>
+                    <middleName>Elizabeth</middleName>
+                    <lastName>Chen</lastName>
+                </name>
+                <birthDate>1992-11-08</birthDate>
+                <gender>F</gender>
+                <ssn></ssn>
+                <contact priority="1">
+                    <email type="primary" verified="true">sarah.chen@example.com</email>
+                    <phone type="mobile" country="+1">555-234-5678</phone>
+                </contact>
+                <addresses>
+                    <address type="billing" primary="true" addressId="ADDR-003">
+                        <street>789 Pine Street</street>
+                        <apartment>Suite 200</apartment>
+                        <city>San Francisco</city>
+                        <state>CA</state>
+                        <zipCode>94102</zipCode>
+                        <country>USA</country>
+                        <coordinates>
+                            <latitude>37.7749</latitude>
+                            <longitude>-122.4194</longitude>
+                        </coordinates>
+                    </address>
+                </addresses>
+            </personalInfo>
+            <accountDetails>
+                <membershipLevel>Gold</membershipLevel>
+                <joinDate>2023-08-03T11:20:00Z</joinDate>
+                <loyaltyPoints>3890</loyaltyPoints>
+                <creditCard>
+                    <cardNumber>5412-****-****-8901</cardNumber>
+                    <cardType>Mastercard</cardType>
+                    <expiryDate>2026-08</expiryDate>
+                    <cardholderName>Sarah E Chen</cardholderName>
+                </creditCard>
+            </accountDetails>
+            <purchaseHistory>
+                <order orderId="ORD-2024-045" status="shipped" priority="express">
+                    <orderDate>2024-01-13T16:45:20Z</orderDate>
+                    <items>
+                        <item itemId="PROD-7801" sku="FASH-CLO-556">
+                            <productName>Designer Winter Coat</productName>
+                            <category>Fashion</category>
+                            <subcategory>Outerwear</subcategory>
+                            <quantity>1</quantity>
+                            <unitPrice currency="USD">289.99</unitPrice>
+                            <discount percentage="20.0">58.00</discount>
+                            <tax>18.56</tax>
+                            <subtotal>250.55</subtotal>
+                        </item>
+                        <item itemId="PROD-7802" sku="FASH-ACC-223">
+                            <productName>Leather Handbag</productName>
+                            <category>Fashion</category>
+                            <subcategory>Accessories</subcategory>
+                            <quantity>1</quantity>
+                            <unitPrice currency="USD">159.99</unitPrice>
+                            <discount percentage="0.0">0.00</discount>
+                            <tax>12.80</tax>
+                            <subtotal>172.79</subtotal>
+                        </item>
+                    </items>
+                    <shipping method="express" carrier="UPS" trackingNumber="1Z999AA10123456789">
+                        <cost>24.99</cost>
+                        <estimatedDelivery>2024-01-15</estimatedDelivery>
+                        <actualDelivery></actualDelivery>
+                    </shipping>
+                    <payment method="credit_card" transactionId="TXN-55667788">
+                        <amount>448.33</amount>
+                        <currency>USD</currency>
+                        <processedDate>2024-01-13T16:47:12Z</processedDate>
+                    </payment>
+                    <totals>
+                        <subtotal>423.34</subtotal>
+                        <tax>31.36</tax>
+                        <shipping>24.99</shipping>
+                        <grandTotal>479.69</grandTotal>
+                    </totals>
+                </order>
+            </purchaseHistory>
+            <analytics>
+                <lifetimeValue>1234.56</lifetimeValue>
+                <averageOrderValue>411.52</averageOrderValue>
+                <totalOrders>3</totalOrders>
+                <lastPurchase>2024-01-13</lastPurchase>
+                <customerSegment>Growing</customerSegment>
+                <churnRisk score="0.35">Medium</churnRisk>
+                <preferences>
+                    <communication>
+                        <emailMarketing>true</emailMarketing>
+                        <smsMarketing>true</smsMarketing>
+                        <pushNotifications>false</pushNotifications>
+                    </communication>
+                    <favoriteCategories>
+                        <category weight="0.70">Fashion</category>
+                        <category weight="0.20">Beauty</category>
+                        <category weight="0.10">Home Decor</category>
+                    </favoriteCategories>
+                </preferences>
+            </analytics>
+        </customer>
+        <customer customerId="CUST-10003" accountType="basic" verified="false" createdDate="2024-01-05">
+            <personalInfo>
+                <name prefix="Dr.">
+                    <firstName>Michael</firstName>
+                    <middleName></middleName>
+                    <lastName>Patel</lastName>
+                </name>
+                <birthDate>1978-07-14</birthDate>
+                <gender>M</gender>
+                <ssn></ssn>
+                <contact priority="1">
+                    <email type="primary" verified="false">m.patel.md@example.com</email>
+                    <phone type="mobile" country="+1">555-876-5432</phone>
+                </contact>
+                <addresses>
+                    <address type="billing" primary="true" addressId="ADDR-004">
+                        <street>321 Elm Street</street>
+                        <apartment></apartment>
+                        <city>Austin</city>
+                        <state>TX</state>
+                        <zipCode>78701</zipCode>
+                        <country>USA</country>
+                        <coordinates>
+                            <latitude>30.2672</latitude>
+                            <longitude>-97.7431</longitude>
+                        </coordinates>
+                    </address>
+                </addresses>
+            </personalInfo>
+            <accountDetails>
+                <membershipLevel>Bronze</membershipLevel>
+                <joinDate>2024-01-05T09:30:00Z</joinDate>
+                <loyaltyPoints>150</loyaltyPoints>
+                <creditCard>
+                    <cardNumber>3782-****-****-1008</cardNumber>
+                    <cardType>American Express</cardType>
+                    <expiryDate>2027-03</expiryDate>
+                    <cardholderName>Michael Patel</cardholderName>
+                </creditCard>
+            </accountDetails>
+            <purchaseHistory>
+                <order orderId="ORD-2024-089" status="processing" priority="standard">
+                    <orderDate>2024-01-14T08:12:45Z</orderDate>
+                    <items>
+                        <item itemId="PROD-2201" sku="HOME-KIT-445">
+                            <productName>Professional Knife Set</productName>
+                            <category>Home &amp; Kitchen</category>
+                            <subcategory>Cookware</subcategory>
+                            <quantity>1</quantity>
+                            <unitPrice currency="USD">179.99</unitPrice>
+                            <discount percentage="0.0">0.00</discount>
+                            <tax>14.40</tax>
+                            <subtotal>194.39</subtotal>
+                        </item>
+                    </items>
+                    <shipping method="standard" carrier="FedEx" trackingNumber="">
+                        <cost>7.99</cost>
+                        <estimatedDelivery>2024-01-20</estimatedDelivery>
+                        <actualDelivery></actualDelivery>
+                    </shipping>
+                    <payment method="credit_card" transactionId="TXN-99887766">
+                        <amount>202.38</amount>
+                        <currency>USD</currency>
+                        <processedDate>2024-01-14T08:14:20Z</processedDate>
+                    </payment>
+                    <totals>
+                        <subtotal>179.99</subtotal>
+                        <tax>14.40</tax>
+                        <shipping>7.99</shipping>
+                        <grandTotal>202.38</grandTotal>
+                    </totals>
+                </order>
+            </purchaseHistory>
+            <analytics>
+                <lifetimeValue>202.38</lifetimeValue>
+                <averageOrderValue>202.38</averageOrderValue>
+                <totalOrders>1</totalOrders>
+                <lastPurchase>2024-01-14</lastPurchase>
+                <customerSegment>New</customerSegment>
+                <churnRisk score="0.75">High</churnRisk>
+                <preferences>
+                    <communication>
+                        <emailMarketing>false</emailMarketing>
+                        <smsMarketing>false</smsMarketing>
+                        <pushNotifications>false</pushNotifications>
+                    </communication>
+                    <favoriteCategories>
+                        <category weight="1.0">Home &amp; Kitchen</category>
+                    </favoriteCategories>
+                </preferences>
+            </analytics>
+        </customer>
+    </customers>
+    <metadata>
+        <generatedBy>E-Commerce Analytics System v2.0</generatedBy>
+        <exportDate>2024-01-15T12:00:00Z</exportDate>
+        <recordCount>3</recordCount>
+        <dataQuality score="0.98">Excellent</dataQuality>
+    </metadata>
+</ecommerce>

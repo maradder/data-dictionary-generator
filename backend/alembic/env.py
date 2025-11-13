@@ -1,25 +1,27 @@
 """Alembic database migration environment configuration."""
 import os
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# Import Base from models to enable autogenerate
-import sys
-from pathlib import Path
+# Ensure the parent directory (containing 'src') is in sys.path
+# This works for both local development and Docker
+current_dir = Path(__file__).resolve().parent.parent
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
 
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from core.config import settings
-from models.base import Base
+# Import Base and settings - always use src.* imports
+from src.core.config import settings
+from src.models.base import Base
 
 # Import all models so they're registered with Base.metadata
-from models.dictionary import Dictionary  # noqa: F401
-from models.field import Field  # noqa: F401
-from models.version import Version  # noqa: F401
-from models.annotation import Annotation  # noqa: F401
+from src.models.dictionary import Dictionary  # noqa: F401
+from src.models.field import Field  # noqa: F401
+from src.models.version import Version  # noqa: F401
+from src.models.annotation import Annotation  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -63,7 +63,7 @@ class ExportService:
         """
         dictionary = (
             self.db.query(Dictionary)
-            .filter(Dictionary.id == dictionary_id)
+            .filter(Dictionary.id == str(dictionary_id))
             .first()
         )
 
@@ -91,14 +91,14 @@ class ExportService:
         if version_id:
             version = (
                 self.db.query(Version)
-                .filter(Version.id == version_id, Version.dictionary_id == dictionary_id)
+                .filter(Version.id == str(version_id), Version.dictionary_id == str(dictionary_id))
                 .first()
             )
         else:
             # Get latest version
             version = (
                 self.db.query(Version)
-                .filter(Version.dictionary_id == dictionary_id)
+                .filter(Version.dictionary_id == str(dictionary_id))
                 .order_by(Version.version_number.desc())
                 .first()
             )
@@ -135,7 +135,7 @@ class ExportService:
         # Get dictionary
         dictionary = (
             self.db.query(Dictionary)
-            .filter(Dictionary.id == dictionary_id)
+            .filter(Dictionary.id == str(dictionary_id))
             .first()
         )
 
@@ -146,13 +146,13 @@ class ExportService:
         if version_id:
             version = (
                 self.db.query(Version)
-                .filter(Version.id == version_id, Version.dictionary_id == dictionary_id)
+                .filter(Version.id == str(version_id), Version.dictionary_id == str(dictionary_id))
                 .first()
             )
         else:
             version = (
                 self.db.query(Version)
-                .filter(Version.dictionary_id == dictionary_id)
+                .filter(Version.dictionary_id == str(dictionary_id))
                 .order_by(Version.version_number.desc())
                 .first()
             )
@@ -282,7 +282,7 @@ class ExportService:
         # Get dictionary
         dictionary = (
             self.db.query(Dictionary)
-            .filter(Dictionary.id == dictionary_id)
+            .filter(Dictionary.id == str(dictionary_id))
             .first()
         )
 
@@ -296,7 +296,7 @@ class ExportService:
         if version_id:
             version = (
                 self.db.query(Version)
-                .filter(Version.id == version_id, Version.dictionary_id == dictionary_id)
+                .filter(Version.id == str(version_id), Version.dictionary_id == str(dictionary_id))
                 .first()
             )
             if not version:
@@ -308,7 +308,7 @@ class ExportService:
             # Get latest version
             version = (
                 self.db.query(Version)
-                .filter(Version.dictionary_id == dictionary_id)
+                .filter(Version.dictionary_id == str(dictionary_id))
                 .order_by(Version.version_number.desc())
                 .first()
             )
@@ -321,7 +321,7 @@ class ExportService:
         # Get fields for version
         fields = (
             self.db.query(Field)
-            .filter(Field.version_id == version.id)
+            .filter(Field.version_id == str(version.id))
             .order_by(Field.position)
             .all()
         )
@@ -637,3 +637,144 @@ class ExportService:
         # Add auto-filter
         if changes:
             ws.auto_filter.ref = f"A1:F{row_idx - 1}"
+
+    def batch_export_to_excel(
+        self,
+        dictionary_ids: list[UUID],
+        include_statistics: bool = True,
+        include_annotations: bool = True,
+        include_pii_info: bool = True,
+        output_path: Path | None = None,
+        exported_by: str | None = None,
+    ) -> Path:
+        """
+        Export multiple dictionaries to a single Excel workbook.
+
+        Each dictionary gets its own sheet with the latest version.
+        Creates a summary sheet with metadata for all dictionaries.
+
+        Args:
+            dictionary_ids: List of dictionary UUIDs to export
+            include_statistics: Include statistical data
+            include_annotations: Include annotations
+            include_pii_info: Include PII information
+            output_path: Optional path where Excel file should be saved (creates temp file if None)
+            exported_by: User performing the export
+
+        Returns:
+            Path to created Excel file
+
+        Raises:
+            NotFoundError: If any dictionary not found
+            ValidationError: If no dictionaries provided or output path is invalid
+            ExportError: If export fails
+        """
+        logger.info(
+            f"Batch exporting {len(dictionary_ids)} dictionaries to Excel",
+            extra={
+                "num_dictionaries": len(dictionary_ids),
+                "output_path": str(output_path) if output_path else "temp",
+            },
+        )
+
+        # Validate input
+        if not dictionary_ids:
+            raise ValidationError("At least one dictionary ID is required")
+
+        # Create temp file if no output path provided
+        if output_path is None:
+            temp_file = tempfile.NamedTemporaryFile(
+                delete=False, suffix=".xlsx", mode="wb"
+            )
+            output_path = Path(temp_file.name)
+            temp_file.close()
+        else:
+            # Validate output path
+            if output_path.suffix.lower() not in [".xlsx", ".xls"]:
+                raise ValidationError("Output file must have .xlsx or .xls extension")
+
+            # Ensure parent directory exists
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Collect data for all dictionaries
+        dictionaries_data = []
+        for dictionary_id in dictionary_ids:
+            # Get dictionary
+            dictionary = (
+                self.db.query(Dictionary)
+                .filter(Dictionary.id == str(dictionary_id))
+                .first()
+            )
+
+            if not dictionary:
+                raise NotFoundError(
+                    f"Dictionary not found: {dictionary_id}",
+                    details={"dictionary_id": str(dictionary_id)},
+                )
+
+            # Get latest version
+            version = (
+                self.db.query(Version)
+                .filter(Version.dictionary_id == str(dictionary_id))
+                .order_by(Version.version_number.desc())
+                .first()
+            )
+
+            if not version:
+                raise NotFoundError(
+                    f"No versions found for dictionary {dictionary_id}",
+                    details={"dictionary_id": str(dictionary_id)},
+                )
+
+            # Get fields for version
+            fields = (
+                self.db.query(Field)
+                .filter(Field.version_id == str(version.id))
+                .order_by(Field.position)
+                .all()
+            )
+
+            dictionaries_data.append({
+                "dictionary": dictionary,
+                "version": version,
+                "fields": fields,
+            })
+
+        # Perform batch export
+        try:
+            self.excel_exporter.batch_export_dictionaries(
+                dictionaries_data=dictionaries_data,
+                output_path=output_path,
+            )
+
+            logger.info(
+                f"Batch Excel export completed successfully: {output_path}",
+                extra={
+                    "num_dictionaries": len(dictionary_ids),
+                    "output_path": str(output_path),
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Batch Excel export failed: {e}", exc_info=True)
+            raise ExportError(
+                f"Failed to batch export dictionaries to Excel: {str(e)}",
+                details={
+                    "num_dictionaries": len(dictionary_ids),
+                    "output_path": str(output_path),
+                },
+            )
+
+        # Audit log
+        audit_logger.info(
+            "Dictionaries batch exported to Excel",
+            extra={
+                "action": "batch_export_to_excel",
+                "dictionary_ids": [str(d_id) for d_id in dictionary_ids],
+                "num_dictionaries": len(dictionary_ids),
+                "output_path": str(output_path),
+                "exported_by": exported_by,
+            },
+        )
+
+        return output_path

@@ -1,27 +1,113 @@
 services:
-  # PostgreSQL Database
+  # ==============================================================================
+  # Lightweight SQLite mode (default - recommended for most users)
+  # ==============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ddgen_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data  # Persist SQLite database
+    environment:
+      - DATABASE_URL=sqlite:///data/app.db
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - ddgen_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ==============================================================================
+  # Optional: PostgreSQL mode (for advanced users requiring production database)
+  # ==============================================================================
+  app-postgres:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ddgen_app_postgres
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ddgen_user}:${POSTGRES_PASSWORD:-ddgen_password}@postgres:5432/${POSTGRES_DB:-data_dictionary_db}
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - ddgen_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    profiles:
+      - postgres
+
+  # ==============================================================================
+  # PostgreSQL Database (for app-postgres mode)
+  # ==============================================================================
   postgres:
     image: postgres:15-alpine
     container_name: ddgen_postgres
     environment:
-      POSTGRES_USER: ddgen_user
-      POSTGRES_PASSWORD: ddgen_password
-      POSTGRES_DB: data_dictionary_db
+      POSTGRES_USER: ${POSTGRES_USER:-ddgen_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ddgen_password}
+      POSTGRES_DB: ${POSTGRES_DB:-data_dictionary_db}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ddgen_user -d data_dictionary_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ddgen_user} -d ${POSTGRES_DB:-data_dictionary_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - ddgen_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    profiles:
+      - postgres
 
-  # Redis Cache & Queue
+  # ==============================================================================
+  # Redis Cache & Queue (for advanced caching)
+  # ==============================================================================
   redis:
     image: redis:7-alpine
     container_name: ddgen_redis
@@ -37,6 +123,8 @@ services:
       retries: 5
     networks:
       - ddgen_network
+    profiles:
+      - advanced
 
   # FastAPI Backend (optional - for containerized development)
   # backend:
@@ -63,7 +151,9 @@ services:
   #   networks:
   #     - ddgen_network
 
-  # pgAdmin (optional - for database management)
+  # ==============================================================================
+  # pgAdmin (optional - for PostgreSQL database management)
+  # ==============================================================================
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: ddgen_pgadmin
@@ -80,6 +170,7 @@ services:
     networks:
       - ddgen_network
     profiles:
+      - postgres
       - tools
 
 volumes:

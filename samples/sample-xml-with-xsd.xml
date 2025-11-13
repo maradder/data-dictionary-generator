@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bookstore xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="sample-books.xsd">
+  <book id="b001" lang="en" available="yes">
+    <title>The Pragmatic Programmer</title>
+    <author>Andrew Hunt</author>
+    <author>David Thomas</author>
+    <price>49.99</price>
+    <isbn>978-0135957059</isbn>
+    <category>Programming</category>
+  </book>
+  <book id="b002" lang="en" available="yes">
+    <title>Clean Code</title>
+    <author>Robert C. Martin</author>
+    <price>44.99</price>
+    <isbn>978-0132350884</isbn>
+    <category>Programming</category>
+  </book>
+  <book id="b003" lang="es" available="no">
+    <title>Design Patterns</title>
+    <author>Erich Gamma</author>
+    <author>Richard Helm</author>
+    <author>Ralph Johnson</author>
+    <author>John Vlissides</author>
+    <price>54.99</price>
+    <isbn>978-0201633610</isbn>
+    <category>Software Engineering</category>
+  </book>
+  <book id="b004" lang="en" available="yes">
+    <title>Introduction to Algorithms</title>
+    <author>Thomas H. Cormen</author>
+    <author>Charles E. Leiserson</author>
+    <price>89.99</price>
+    <category>Computer Science</category>
+  </book>
+  <book id="b005" lang="fr" available="yes">
+    <title>Refactoring</title>
+    <author>Martin Fowler</author>
+    <price>52.99</price>
+    <isbn>978-0134757599</isbn>
+    <category>Software Engineering</category>
+  </book>
+</bookstore>

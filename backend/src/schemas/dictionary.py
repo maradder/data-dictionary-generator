@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, field_serializer
 
 
 class DictionaryCreate(BaseModel):
@@ -141,6 +141,15 @@ class VersionSummary(BaseModel):
     created_at: datetime = Field(..., description="Version creation timestamp")
     created_by: str | None = Field(None, description="Creator email address")
 
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime, _info):
+        """Ensure datetime is serialized with timezone info."""
+        if dt and dt.tzinfo is None:
+            # If somehow we get a naive datetime, treat it as UTC
+            from datetime import timezone
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat() if dt else None
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -198,6 +207,15 @@ class DictionaryResponse(BaseModel):
         description="All versions (only in detail view)"
     )
 
+    @field_serializer('created_at', 'updated_at')
+    def serialize_datetime(self, dt: datetime, _info):
+        """Ensure datetime is serialized with timezone info."""
+        if dt and dt.tzinfo is None:
+            # If somehow we get a naive datetime, treat it as UTC
+            from datetime import timezone
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat() if dt else None
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -234,6 +252,15 @@ class DictionaryListItem(BaseModel):
         ge=0,
         description="Fields in latest version"
     )
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime, _info):
+        """Ensure datetime is serialized with timezone info."""
+        if dt and dt.tzinfo is None:
+            # If somehow we get a naive datetime, treat it as UTC
+            from datetime import timezone
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat() if dt else None
 
     model_config = ConfigDict(from_attributes=True)
 

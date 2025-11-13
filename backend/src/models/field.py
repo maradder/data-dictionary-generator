@@ -1,13 +1,13 @@
 """Field model - represents a field in a dictionary version."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
-from sqlalchemy.dialects.postgresql import JSON, TIMESTAMP, UUID
+from sqlalchemy import Boolean, ForeignKey, Integer, JSON, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
+from src.core.database import TZDateTime
 
 if TYPE_CHECKING:
     from models.annotation import Annotation
@@ -24,9 +24,10 @@ class Field(Base):
 
     __tablename__ = "fields"
 
-    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    version_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("versions.id", ondelete="CASCADE"), nullable=False
+    # Use String(36) for UUID to support both SQLite and PostgreSQL
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    version_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("versions.id", ondelete="CASCADE"), nullable=False
     )
     field_path: Mapped[str] = mapped_column(String(1000), nullable=False)
     field_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -37,6 +38,7 @@ class Field(Base):
     is_nullable: Mapped[bool] = mapped_column(Boolean, default=True)
     is_array: Mapped[bool] = mapped_column(Boolean, default=False)
     array_item_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Use generic JSON type (works with both PostgreSQL and SQLite JSON1 extension)
     sample_values: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     null_count: Mapped[int] = mapped_column(Integer, default=0)
     null_percentage: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
@@ -54,8 +56,9 @@ class Field(Base):
     is_pii: Mapped[bool] = mapped_column(Boolean, default=False)
     pii_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    # Use TZDateTime for cross-database timezone-aware datetimes
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), default=datetime.utcnow
+        TZDateTime, default=lambda: datetime.now(timezone.utc)
     )
     position: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

@@ -1,21 +1,58 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useDictionaries, useDeleteDictionary } from '@/hooks/useDictionaries'
+import { useDictionaries, useDeleteDictionary, useBatchExportExcel } from '@/hooks/useDictionaries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/common/EmptyState'
+import { Checkbox } from '@/components/ui/checkbox'
 import { formatDistanceToNow } from 'date-fns'
-import { Database } from 'lucide-react'
+import { Database, Download, X } from 'lucide-react'
 import type { DictionaryListItem } from '@/types/api'
 
 export function DictionariesListPage() {
   const navigate = useNavigate()
   const [page, setPage] = useState(0)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const limit = 12
   const { data, isLoading, error } = useDictionaries(limit, page * limit)
   const deleteMutation = useDeleteDictionary()
+  const batchExportMutation = useBatchExportExcel()
+
+  // Define dictionaries early so handlers can use it
+  const dictionaries = data?.data || []
+  const hasNext = data?.meta.has_more || false
+  const hasPrev = (data?.meta.offset || 0) > 0
+
+  const handleToggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === dictionaries.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(dictionaries.map(d => d.id)))
+    }
+  }
+
+  const handleBatchExport = () => {
+    if (selectedIds.size === 0) return
+    batchExportMutation.mutate(Array.from(selectedIds))
+  }
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set())
+  }
 
   if (isLoading) {
     return (
@@ -83,10 +120,6 @@ export function DictionariesListPage() {
     )
   }
 
-  const dictionaries = data?.data || []
-  const hasNext = data?.meta.has_more || false
-  const hasPrev = (data?.meta.offset || 0) > 0
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -105,12 +138,62 @@ export function DictionariesListPage() {
         </Link>
       </div>
 
+      {/* Selection Actions Bar */}
+      {dictionaries.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="select-all"
+                checked={selectedIds.size === dictionaries.length && dictionaries.length > 0}
+                onCheckedChange={handleSelectAll}
+              />
+              <label
+                htmlFor="select-all"
+                className="text-sm font-medium cursor-pointer"
+              >
+                Select All
+              </label>
+            </div>
+            {selectedIds.size > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {selectedIds.size} selected
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {selectedIds.size > 0 && (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleBatchExport}
+                  disabled={batchExportMutation.isPending}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {batchExportMutation.isPending ? 'Exporting...' : 'Export Selected'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearSelection}
+                  className="shrink-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Dictionary Grid */}
       {dictionaries.length === 0 ? (
         <EmptyState
           icon={<Database size={64} strokeWidth={1.5} />}
           title="No data dictionaries yet"
-          description="Get started by uploading your first data dictionary. Upload a JSON file to automatically generate comprehensive field documentation."
+          description="Get started by uploading your first data dictionary. Upload a JSON or XML file to automatically generate comprehensive field documentation."
           action={{
             label: 'Upload your first dictionary',
             onClick: () => navigate('/upload'),
@@ -120,8 +203,14 @@ export function DictionariesListPage() {
         <>
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {dictionaries.map((dict: DictionaryListItem) => (
-              <Card key={dict.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
+              <Card key={dict.id} className="hover:shadow-lg transition-shadow relative">
+                <div className="absolute top-4 left-4 z-10">
+                  <Checkbox
+                    checked={selectedIds.has(dict.id)}
+                    onCheckedChange={() => handleToggleSelection(dict.id)}
+                  />
+                </div>
+                <CardHeader className="pl-12">
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-lg sm:text-xl break-words">{dict.name}</CardTitle>
                     {dict.version_count && (

@@ -97,7 +97,7 @@ class VersionService:
         # Get latest version number
         latest_version = (
             self.db.query(Version)
-            .filter(Version.dictionary_id == dictionary_id)
+            .filter(Version.dictionary_id == str(dictionary_id))
             .order_by(Version.version_number.desc())
             .first()
         )
@@ -345,7 +345,7 @@ class VersionService:
         version1 = (
             self.db.query(Version)
             .filter(
-                Version.dictionary_id == dictionary_id,
+                Version.dictionary_id == str(dictionary_id),
                 Version.version_number == version1_number,
             )
             .first()
@@ -354,7 +354,7 @@ class VersionService:
         version2 = (
             self.db.query(Version)
             .filter(
-                Version.dictionary_id == dictionary_id,
+                Version.dictionary_id == str(dictionary_id),
                 Version.version_number == version2_number,
             )
             .first()
@@ -567,7 +567,7 @@ class VersionService:
         """
         return (
             self.db.query(Field)
-            .filter(Field.version_id == version_id)
+            .filter(Field.version_id == str(version_id))
             .order_by(Field.position)
             .all()
         )
@@ -585,7 +585,7 @@ class VersionService:
         Raises:
             NotFoundError: If version not found
         """
-        version = self.db.query(Version).filter(Version.id == version_id).first()
+        version = self.db.query(Version).filter(Version.id == str(version_id)).first()
 
         if not version:
             raise NotFoundError(
@@ -612,9 +612,13 @@ class VersionService:
         Returns:
             List of versions
         """
+        from sqlalchemy.orm import selectinload
+
+        # Use eager loading to prevent N+1 queries when accessing fields
         return (
             self.db.query(Version)
-            .filter(Version.dictionary_id == dictionary_id)
+            .options(selectinload(Version.fields))
+            .filter(Version.dictionary_id == str(dictionary_id))
             .order_by(Version.version_number.desc())
             .limit(limit)
             .offset(offset)
@@ -652,7 +656,7 @@ class VersionService:
         # Get total count
         total_count = (
             self.db.query(Field)
-            .filter(Field.version_id == version_id)
+            .filter(Field.version_id == str(version_id))
             .count()
         )
 
@@ -662,7 +666,7 @@ class VersionService:
         fields = (
             self.db.query(Field)
             .options(joinedload(Field.annotations))
-            .filter(Field.version_id == version_id)
+            .filter(Field.version_id == str(version_id))
             .order_by(Field.position, Field.field_path)
             .limit(limit)
             .offset(offset)

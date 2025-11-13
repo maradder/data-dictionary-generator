@@ -7,6 +7,7 @@ import { DictionariesListPage } from './pages/dictionaries/DictionariesListPage'
 import { DictionaryUploadPage } from './pages/dictionaries/DictionaryUploadPage'
 import { DictionaryDetailPage } from './pages/dictionaries/DictionaryDetailPage'
 import { GlobalSearchPage } from './pages/search/GlobalSearchPage'
+import { DatabaseManagementPage } from './pages/database/DatabaseManagementPage'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 function App() {
@@ -45,6 +46,14 @@ function App() {
                 element={
                   <ErrorBoundary>
                     <GlobalSearchPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="database"
+                element={
+                  <ErrorBoundary>
+                    <DatabaseManagementPage />
                   </ErrorBoundary>
                 }
               />

@@ -5,6 +5,7 @@ This module provides the AnalysisService class for analyzing JSON files,
 regenerating AI descriptions, and recalculating quality metrics.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -328,6 +329,10 @@ class AnalysisService:
         skipped = 0
         failed = 0
 
+        # Collect fields that need AI descriptions
+        fields_to_process = []
+        field_annotation_map = {}
+
         for field in fields:
             # Check if annotation exists
             existing_annotation = (
@@ -342,44 +347,28 @@ class AnalysisService:
                 skipped += 1
                 continue
 
+            # Add to batch processing list
+            fields_to_process.append(field)
+            field_annotation_map[field.id] = existing_annotation
+
+        # Generate AI descriptions in batch
+        if fields_to_process:
+            logger.info(f"Generating AI descriptions for {len(fields_to_process)} fields")
+
             try:
-                # Generate description
-                description, business_name = self.ai_generator.generate_description(
-                    field.field_path,
-                    field.field_name,
-                    field.data_type,
-                    field.semantic_type,
-                    field.sample_values.get("values", []) if field.sample_values else [],
+                # Run async batch processing
+                results = asyncio.run(
+                    self._regenerate_ai_descriptions_batch(
+                        fields_to_process, field_annotation_map, regenerated_by
+                    )
                 )
 
-                if existing_annotation:
-                    # Update existing
-                    existing_annotation.description = description
-                    existing_annotation.business_name = business_name
-                    existing_annotation.is_ai_generated = True
-                    existing_annotation.ai_model_version = self.ai_generator.model
-                    existing_annotation.updated_at = datetime.now(timezone.utc)
-                    existing_annotation.updated_by = regenerated_by
-                else:
-                    # Create new
-                    annotation = Annotation(
-                        field_id=field.id,
-                        description=description,
-                        business_name=business_name,
-                        is_ai_generated=True,
-                        ai_model_version=self.ai_generator.model,
-                        created_by=regenerated_by,
-                    )
-                    self.db.add(annotation)
-
-                regenerated += 1
+                regenerated = results["regenerated"]
+                failed = results["failed"]
 
             except Exception as e:
-                logger.error(
-                    f"Failed to generate AI description for field {field.field_path}: {e}",
-                    extra={"field_id": str(field.id)},
-                )
-                failed += 1
+                logger.error(f"Failed to generate AI descriptions in batch: {e}")
+                failed = len(fields_to_process)
 
         # Commit changes
         try:
@@ -420,6 +409,89 @@ class AnalysisService:
             "skipped": skipped,
             "failed": failed,
         }
+
+    async def _regenerate_ai_descriptions_batch(
+        self,
+        fields: list[Field],
+        field_annotation_map: dict[UUID, Annotation | None],
+        regenerated_by: str | None,
+    ) -> dict[str, int]:
+        """
+        Regenerate AI descriptions for multiple fields in batch (async).
+
+        Args:
+            fields: List of fields to process
+            field_annotation_map: Map of field IDs to existing annotations (or None)
+            regenerated_by: User performing the regeneration
+
+        Returns:
+            Dictionary with counts: {"regenerated": int, "failed": int}
+        """
+        regenerated = 0
+        failed = 0
+
+        try:
+            # Prepare batch input
+            batch_input = [
+                {
+                    "field_path": field.field_path,
+                    "field_name": field.field_name,
+                    "data_type": field.data_type,
+                    "semantic_type": field.semantic_type,
+                    "sample_values": field.sample_values.get("values", [])
+                    if field.sample_values
+                    else [],
+                }
+                for field in fields
+            ]
+
+            # Generate descriptions in batch (concurrent)
+            results = await self.ai_generator.generate_batch(batch_input)
+
+            # Process results
+            for field, (description, business_name) in zip(fields, results):
+                try:
+                    existing_annotation = field_annotation_map.get(field.id)
+
+                    if existing_annotation:
+                        # Update existing
+                        existing_annotation.description = description
+                        existing_annotation.business_name = business_name
+                        existing_annotation.is_ai_generated = True
+                        existing_annotation.ai_model_version = self.ai_generator.model
+                        existing_annotation.updated_at = datetime.now(timezone.utc)
+                        existing_annotation.updated_by = regenerated_by
+                    else:
+                        # Create new
+                        annotation = Annotation(
+                            field_id=field.id,
+                            description=description,
+                            business_name=business_name,
+                            is_ai_generated=True,
+                            ai_model_version=self.ai_generator.model,
+                            created_by=regenerated_by,
+                        )
+                        self.db.add(annotation)
+
+                    regenerated += 1
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to create/update annotation for {field.field_path}: {e}",
+                        extra={"field_id": str(field.id)},
+                    )
+                    failed += 1
+
+            logger.info(
+                f"Batch AI regeneration completed: {regenerated} successful, {failed} failed",
+                extra={"regenerated": regenerated, "failed": failed},
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to generate AI descriptions in batch: {e}", exc_info=True)
+            failed = len(fields)
+
+        return {"regenerated": regenerated, "failed": failed}
 
     def recalculate_quality_metrics(
         self,

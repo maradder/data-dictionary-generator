@@ -685,6 +685,8 @@ docker exec -i postgres pg_restore \
 
 ### OpenAI Integration
 
+#### Basic Configuration
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | "" | OpenAI API key for GPT-4 |
@@ -692,6 +694,74 @@ docker exec -i postgres pg_restore \
 | `OPENAI_MODEL` | "gpt-4" | OpenAI model to use |
 | `OPENAI_MAX_TOKENS` | `500` | Max tokens per description |
 | `OPENAI_TEMPERATURE` | `0.7` | Model temperature (creativity) |
+
+#### Timeout Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_REQUEST_TIMEOUT` | `60` | API request timeout (seconds) |
+| `OPENAI_CONNECTION_TIMEOUT` | `10` | Connection timeout (seconds) |
+
+#### Cache Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_CACHE_ENABLED` | `true` | Enable caching of AI responses |
+| `OPENAI_CACHE_TTL` | `3600` | Cache time-to-live (seconds) |
+| `OPENAI_CACHE_MAX_SIZE` | `10000` | Maximum cache entries (LRU eviction) |
+
+#### Retry & Rate Limiting
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_MAX_RETRY_ATTEMPTS` | `3` | Maximum retry attempts for API calls |
+| `OPENAI_RETRY_MULTIPLIER` | `2.0` | Exponential backoff multiplier |
+| `OPENAI_RETRY_MIN_WAIT` | `4` | Minimum wait between retries (seconds) |
+| `OPENAI_RETRY_MAX_WAIT` | `30` | Maximum wait between retries (seconds) |
+| `OPENAI_MAX_CONCURRENT_REQUESTS` | `10` | Maximum parallel API requests |
+| `OPENAI_RATE_LIMIT_RPM` | `60` | Requests per minute limit (0=unlimited) |
+
+#### Cost Tracking
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_METRICS_ENABLED` | `true` | Enable token usage metrics tracking |
+
+#### Production Best Practices
+
+**Timeout Configuration:**
+- Set `OPENAI_REQUEST_TIMEOUT` to 60-120s for production to handle API latency
+- Use `OPENAI_CONNECTION_TIMEOUT` of 10s to fail fast on network issues
+
+**Cache Configuration:**
+- Enable caching (`OPENAI_CACHE_ENABLED=true`) to reduce API costs
+- Set `OPENAI_CACHE_TTL` to 3600s (1 hour) or higher for stable schemas
+- Adjust `OPENAI_CACHE_MAX_SIZE` based on your dictionary volume (10,000 entries ≈ 1-2MB memory)
+- Cache automatically invalidates when model version changes
+
+**Retry & Rate Limiting:**
+- Keep `OPENAI_MAX_RETRY_ATTEMPTS=3` with exponential backoff to handle transient failures
+- Set `OPENAI_MAX_CONCURRENT_REQUESTS` based on your OpenAI tier limits:
+  - Free tier: 3 requests/min → use `OPENAI_MAX_CONCURRENT_REQUESTS=3`
+  - Pay-as-you-go: 60-500 requests/min → use `OPENAI_MAX_CONCURRENT_REQUESTS=10-50`
+- Adjust `OPENAI_RATE_LIMIT_RPM` to match your OpenAI tier to prevent rate limit errors
+
+**Error Handling:**
+- The system includes a circuit breaker that opens after 3 consecutive failures
+- Circuit breaker closes automatically after 60 seconds
+- All failures fall back to rule-based descriptions (no data loss)
+- Proper error classification ensures:
+  - Rate limits: Exponential backoff with `Retry-After` header support
+  - Auth errors: Immediate failure (no retries)
+  - Network errors: Retry with exponential backoff
+  - Server errors (5xx): Retry with exponential backoff
+  - Client errors (4xx): Immediate failure (no retries)
+
+**Cost Monitoring:**
+- Enable `OPENAI_METRICS_ENABLED=true` to track token usage
+- Metrics include: total requests, successful/failed requests, token counts, cache hits
+- Access metrics via `/api/metrics/openai` endpoint (if exposed)
+- Typical cost per 1,000 fields: $40-60 with GPT-4 (with caching: 50-70% reduction)
 
 ### File Processing
 
@@ -1181,6 +1251,36 @@ npm test
 - Add search functionality
 - Performance optimization
 - Documentation improvements
+
+---
+
+## Known Limitations
+
+### XML Parser Timeouts (Linux/macOS Only)
+
+The XML parser uses `signal.alarm()` for timeout protection, which only works on Unix-like systems (Linux, macOS).
+
+**Production Impact:**
+- ✅ **Docker deployment**: Works perfectly - all containers run Linux
+- ✅ **macOS development**: Works natively
+- ⚠️ **Windows development** (without Docker): Timeouts will be disabled
+
+**Workaround for Windows Development:**
+
+If developing on Windows without Docker, XML parsing will work but timeout protection will be disabled. For production-like behavior on Windows, use Docker:
+
+```bash
+docker-compose up app
+```
+
+**Security Note:**
+Timeouts prevent infinite hangs on malicious or malformed XML files. This is especially important for:
+- Very large XML files (>100MB)
+- Deeply nested XML structures
+- External entity references (XXE attacks)
+- XML with complex schemas
+
+All other features (file size validation, XXE protection, network access blocking) work on all platforms.
 
 ---
 

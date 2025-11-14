@@ -6,6 +6,7 @@ using streaming techniques with lxml, extracting field structure and
 sample values with proper memory management.
 """
 
+import logging
 from pathlib import Path
 from typing import Any
 from collections import defaultdict
@@ -13,7 +14,11 @@ from collections import defaultdict
 from lxml import etree
 
 from ..core.config import settings
+from ..core.exceptions import XMLParseError, ValidationError, DTDParseError
 from .xml_schema_parser import DTDParser, XSDParser, XMLSchemaEnhancer
+from .timeout_utils import with_timeout, TimeoutError
+
+logger = logging.getLogger(__name__)
 
 
 class XMLParser:
@@ -57,44 +62,97 @@ class XMLParser:
             }
 
         Raises:
-            etree.XMLSyntaxError: If XML is malformed
+            ValidationError: If file is too large or invalid
+            XMLParseError: If XML is malformed
+            TimeoutError: If parsing exceeds timeout
         """
-        # Extract DTD information if present
-        dtd_info = self._extract_dtd(file_path)
+        # Validate file size
+        file_size_mb = file_path.stat().st_size / (1024 * 1024)
+        max_size_mb = settings.XML_MAX_FILE_SIZE_MB
 
-        # Extract XSD information if schema provided
-        xsd_info = None
-        if xsd_path and xsd_path.exists():
-            xsd_info = self.xsd_parser.parse_xsd(xsd_path)
-            # Validate XML against XSD
-            validation_result = self.xsd_parser.validate_xml(file_path, xsd_path)
-            if xsd_info:
-                xsd_info['validation'] = validation_result
-
-        # Detect if XML represents a collection or single record
-        is_array, root_element = self._detect_structure(file_path)
-
-        if is_array:
-            result = self._parse_collection(file_path, root_element)
-        else:
-            result = self._parse_single_record(file_path)
-
-        # Enhance fields with schema information
-        if dtd_info or xsd_info:
-            result['fields'] = self.schema_enhancer.enhance_fields(
-                result['fields'],
-                dtd_info,
-                xsd_info
+        if file_size_mb > max_size_mb:
+            logger.error(
+                f"XML file too large: {file_size_mb:.2f}MB exceeds limit of {max_size_mb}MB",
+                extra={'file_path': str(file_path), 'file_size_mb': file_size_mb}
+            )
+            raise ValidationError(
+                f"XML file too large: {file_size_mb:.2f}MB exceeds maximum allowed size of {max_size_mb}MB",
+                details={'file_size_mb': file_size_mb, 'max_size_mb': max_size_mb}
             )
 
-        # Add schema metadata to result
-        if dtd_info:
-            result['dtd_metadata'] = dtd_info
-        if xsd_info:
-            result['xsd_metadata'] = xsd_info
+        logger.info(f"Parsing XML file: {file_path.name} ({file_size_mb:.2f}MB)")
 
-        return result
+        try:
+            # Extract DTD information if present
+            dtd_info = self._extract_dtd(file_path)
 
+            # Extract XSD information if schema provided
+            xsd_info = None
+            if xsd_path and xsd_path.exists():
+                xsd_info = self.xsd_parser.parse_xsd(xsd_path)
+                # Validate XML against XSD
+                validation_result = self.xsd_parser.validate_xml(file_path, xsd_path)
+                if xsd_info:
+                    xsd_info['validation'] = validation_result
+
+            # Detect if XML represents a collection or single record
+            is_array, root_element = self._detect_structure(file_path)
+
+            if is_array:
+                result = self._parse_collection(file_path, root_element)
+            else:
+                result = self._parse_single_record(file_path)
+
+            # Enhance fields with schema information
+            if dtd_info or xsd_info:
+                result['fields'] = self.schema_enhancer.enhance_fields(
+                    result['fields'],
+                    dtd_info,
+                    xsd_info
+                )
+
+            # Add schema metadata to result
+            if dtd_info:
+                result['dtd_metadata'] = dtd_info
+            if xsd_info:
+                result['xsd_metadata'] = xsd_info
+
+            logger.info(
+                f"Successfully parsed XML file with {len(result['fields'])} fields",
+                extra={'total_records': result['total_records'], 'is_array': result['is_array']}
+            )
+
+            return result
+
+        except TimeoutError as e:
+            logger.error(
+                f"XML parsing timeout: {e}",
+                extra={'file_path': str(file_path), 'timeout_seconds': settings.XML_PARSE_TIMEOUT}
+            )
+            raise XMLParseError(
+                f"XML parsing timed out after {settings.XML_PARSE_TIMEOUT} seconds. File may be too large or complex.",
+                details={'file_path': str(file_path), 'timeout': settings.XML_PARSE_TIMEOUT}
+            )
+        except etree.XMLSyntaxError as e:
+            logger.error(
+                f"XML syntax error: {e}",
+                extra={'file_path': str(file_path), 'line': e.lineno, 'error': str(e)}
+            )
+            raise XMLParseError(
+                f"Malformed XML file: {str(e)}",
+                details={'file_path': str(file_path), 'line': getattr(e, 'lineno', None)}
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error parsing XML: {e}",
+                extra={'file_path': str(file_path), 'error_type': type(e).__name__}
+            )
+            raise XMLParseError(
+                f"Failed to parse XML file: {str(e)}",
+                details={'file_path': str(file_path)}
+            )
+
+    @with_timeout(30)  # 30 second timeout for structure detection
     def _detect_structure(self, file_path: Path) -> tuple[bool, str | None]:
         """
         Detect if XML is a collection of records or single record.
@@ -103,11 +161,14 @@ class XMLParser:
             (is_array, repeating_element_name)
         """
         # Parse first few elements to detect structure
+        # Security: Disable network access and external entities
         context = etree.iterparse(
             str(file_path),
             events=('end',),
             encoding='utf-8',
-            recover=True
+            recover=True,
+            no_network=not settings.XML_ALLOW_NETWORK_ACCESS,
+            load_dtd=False  # Don't load DTD during structure detection
         )
 
         element_counts = defaultdict(int)
@@ -156,19 +217,26 @@ class XMLParser:
             return False, None
 
         except etree.XMLSyntaxError as e:
-            raise ValueError(f"Malformed XML file: {e}")
+            raise XMLParseError(
+                f"Malformed XML file during structure detection: {e}",
+                details={'file_path': str(file_path)}
+            )
 
+    @with_timeout(None)  # Timeout will be handled by parent parse_file timeout
     def _parse_collection(self, file_path: Path, record_element: str) -> dict[str, Any]:
         """Parse XML collection (multiple records)"""
         fields_map = {}
         records_processed = 0
 
+        # Security: Disable network access and external entities
         context = etree.iterparse(
             str(file_path),
             events=('end',),
             tag=record_element,
             encoding='utf-8',
-            recover=True
+            recover=True,
+            no_network=not settings.XML_ALLOW_NETWORK_ACCESS,
+            load_dtd=False  # Don't load DTD during parsing
         )
 
         try:
@@ -201,14 +269,23 @@ class XMLParser:
             }
 
         except etree.XMLSyntaxError as e:
-            raise ValueError(f"Malformed XML file: {e}")
+            raise XMLParseError(
+                f"Malformed XML file during collection parsing: {e}",
+                details={'file_path': str(file_path), 'record_element': record_element}
+            )
 
+    @with_timeout(None)  # Timeout will be handled by parent parse_file timeout
     def _parse_single_record(self, file_path: Path) -> dict[str, Any]:
         """Parse single XML record"""
         fields_map = {}
 
         try:
-            tree = etree.parse(str(file_path))
+            # Security: Disable network access and external entities
+            parser = etree.XMLParser(
+                no_network=not settings.XML_ALLOW_NETWORK_ACCESS,
+                resolve_entities=settings.XML_ALLOW_EXTERNAL_ENTITIES
+            )
+            tree = etree.parse(str(file_path), parser)
             root = tree.getroot()
 
             self._extract_fields(
@@ -225,7 +302,10 @@ class XMLParser:
             }
 
         except etree.XMLSyntaxError as e:
-            raise ValueError(f"Malformed XML file: {e}")
+            raise XMLParseError(
+                f"Malformed XML file during single record parsing: {e}",
+                details={'file_path': str(file_path)}
+            )
 
     def _extract_fields(
         self,
@@ -340,6 +420,7 @@ class XMLParser:
             parent = parent.getparent()
         return depth
 
+    @with_timeout(30)  # 30 second timeout for DTD extraction
     def _extract_dtd(self, file_path: Path) -> dict[str, Any] | None:
         """
         Extract DTD information from XML file if present.
@@ -349,20 +430,48 @@ class XMLParser:
 
         Returns:
             DTD metadata dictionary or None if no DTD
+
+        Raises:
+            DTDParseError: If DTD is present but cannot be parsed
         """
         try:
-            # Parse with DTD validation enabled
-            parser = etree.XMLParser(dtd_validation=False, load_dtd=True)
+            # Security: Control DTD loading behavior
+            # load_dtd=True allows reading the DTD for schema info
+            # but no_network prevents fetching external DTDs via HTTP
+            parser = etree.XMLParser(
+                dtd_validation=False,
+                load_dtd=True,
+                no_network=not settings.XML_ALLOW_NETWORK_ACCESS,
+                resolve_entities=settings.XML_ALLOW_EXTERNAL_ENTITIES
+            )
             tree = etree.parse(str(file_path), parser)
             dtd = tree.docinfo.internalDTD or tree.docinfo.externalDTD
 
             if dtd is not None:
-                return self.dtd_parser.parse_dtd(dtd)
+                logger.debug(f"Extracting DTD from {file_path.name}")
+                dtd_info = self.dtd_parser.parse_dtd(dtd)
+                if dtd_info:
+                    logger.info(
+                        f"Extracted DTD with {len(dtd_info.get('elements', {}))} elements",
+                        extra={'file_path': str(file_path)}
+                    )
+                return dtd_info
 
             return None
 
-        except Exception:
-            # No DTD or error parsing DTD
+        except etree.XMLSyntaxError as e:
+            # DTD syntax errors are non-fatal - log and continue without DTD
+            logger.warning(
+                f"DTD syntax error in {file_path.name}: {e}",
+                extra={'file_path': str(file_path), 'error': str(e)}
+            )
+            return None
+        except Exception as e:
+            # Other DTD errors are also non-fatal but should be logged
+            logger.warning(
+                f"Error extracting DTD from {file_path.name}: {e}",
+                extra={'file_path': str(file_path), 'error_type': type(e).__name__}
+            )
             return None
 
 

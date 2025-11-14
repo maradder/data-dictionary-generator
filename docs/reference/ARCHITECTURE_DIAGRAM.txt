@@ -1,0 +1,389 @@
+================================================================================
+                        ARCHITECTURE DIAGRAMS
+               Data Dictionary Generator - System Design
+================================================================================
+
+1. LAYERED ARCHITECTURE OVERVIEW
+================================================================================
+
+                         ┌──────────────────────────┐
+                         │    Frontend (React 19)   │
+                         │  - TypeScript Components │
+                         │  - TanStack Query        │
+                         │  - shadcn/ui + Tailwind  │
+                         └────────────┬─────────────┘
+                                      │ HTTP/JSON
+                                      ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │              API LAYER (FastAPI)                            │
+    │  /api/v1/dictionaries, /versions, /exports, /search         │
+    │  - Request validation (Pydantic)                            │
+    │  - Exception handling (Custom hierarchy)                    │
+    │  - CORS middleware                                          │
+    └────────────┬────────────────────────────────────────────--┬─┘
+                 │                                               │
+                 ↓                                               ↓
+    ┌─────────────────────────────────────┐  ┌──────────────────────────┐
+    │   SERVICE LAYER                     │  │  DEPENDENCY INJECTION    │
+    │ (Business Logic & Orchestration)    │  │  - Repositories          │
+    │                                     │  │  - Database Session      │
+    │ • DictionaryService                 │  │  - Current User          │
+    │ • VersionService                    │  └──────────────────────────┘
+    │ • ExportService                     │
+    │ • ImportService                     │
+    │ • AnalysisService                   │
+    │ • DatabaseService                   │
+    └────────────┬────────────────────────┘
+                 │
+    ┌────────────┴─────────────────────────────────────────────────┐
+    │                                                              │
+    ↓                                                              ↓
+┌──────────────────────────────────┐  ┌──────────────────────────────┐
+│  PROCESSOR LAYER                 │  │  REPOSITORY LAYER            │
+│  (Data Transformation)           │  │  (Data Access)               │
+│                                  │  │                              │
+│ Input Parsers:                   │  │ • DictionaryRepository       │
+│  • json_parser                   │  │ • VersionRepository          │
+│  • xml_parser                    │  │ • FieldRepository            │
+│  • sqlite_parser                 │  │ • AnnotationRepository       │
+│  • geopackage_parser             │  │ • BaseRepository (Generic)   │
+│  • protobuf_parser               │  │                              │
+│                                  │  │ Generic CRUD + Pagination    │
+│ Analyzers:                       │  └──────────────────────────────┘
+│  • type_inferrer                 │           │
+│  • semantic_detector             │           │
+│  • pii_detector                  │           │ SQLAlchemy ORM
+│  • quality_analyzer              │           │
+│  • ai_generator                  │           ↓
+│                                  │  ┌──────────────────────────────┐
+│ Output Formatters:               │  │  DATABASE LAYER              │
+│  • excel_exporter                │  │  (SQLAlchemy Core)           │
+│  • import_service                │  │                              │
+│                                  │  │ • TZDateTime (Custom Type)   │
+└──────────────────────────────────┘  │ • Dual DB Support            │
+                                       │ • Connection Pooling        │
+                                       │ • Transaction Management    │
+                                       └──────────────┬──────────────┘
+                                                      │
+                                          ┌───────────┴──────────┐
+                                          │                      │
+                                          ↓                      ↓
+                                    ┌──────────────┐    ┌──────────────┐
+                                    │   SQLite     │    │  PostgreSQL  │
+                                    │   (.db)      │    │  (Remote)    │
+                                    └──────────────┘    └──────────────┘
+
+
+2. DATA FLOW - DICTIONARY CREATION
+================================================================================
+
+User Upload        Parser Selection      Data Transformation      Storage
+    │                    │                      │                   │
+    │ JSON File          │                      │                   │
+    └─────→ [JSON Parser]─┤                      │                   │
+                         │  FieldMetadata        │                   │
+    XML File            │  (Extracted)          │                   │
+    └─────→ [XML Parser]─┤                       ↓                   │
+                         │  ┌──────────────────────────────────────┐ │
+    SQLite DB           │  │  Type Inference                      │ │
+    └─────→ [SQLite Parser]──→  ├─ Data Type Detection           │ │
+                         │  │  ├─ Confidence Scoring             │ │
+    Geospatial          │  │  ├─ Semantic Type Detection         │ │
+    └─────→ [GeoPackage Parser] │  ├─ PII Detection               │ │
+                         │  │  ├─ Quality Metrics Calculation    │ │
+    Protobuf            │  │  └─ AI Description Generation       │ │
+    └─────→ [Protobuf Parser]   └──────────────────────────────────┘ │
+                                                                      ↓
+                                              Create Dictionary Record
+                                              Create Version v1
+                                              Create Fields
+                                              Create Annotations
+                                                      │
+                                                      ↓
+                                            ┌──────────────────┐
+                                            │  Database Store  │
+                                            │  Transaction OK  │
+                                            └──────────────────┘
+
+
+3. CONFIGURATION ENVIRONMENT BRANCHING
+================================================================================
+
+Settings Load (Pydantic)
+        │
+        ├─────────────────────────────────────────┐
+        │                                          │
+        ↓                                          ↓
+[SQLite Config]                        [PostgreSQL Config]
+├─ Check Same Thread: False            ├─ Pool Size: 10
+├─ Timeout: 30s                        ├─ Max Overflow: 20
+├─ Pragmas:                            └─ Pool Pre-Ping: True
+│  ├─ foreign_keys=ON
+│  ├─ journal_mode=WAL
+│  ├─ synchronous=NORMAL
+│  └─ cache_size=-64MB
+└─ Pool: StaticPool
+
+
+4. ERROR HANDLING HIERARCHY
+================================================================================
+
+Exception Caught
+    │
+    ├─ ValidationError (400)
+    │  ├─ File format invalid
+    │  ├─ Field type mismatch
+    │  └─ Required params missing
+    │
+    ├─ NotFoundError (404)
+    │  ├─ Dictionary not found
+    │  ├─ Version not found
+    │  └─ Field not found
+    │
+    ├─ ProcessingError (422)
+    │  ├─ JSON parsing failed
+    │  ├─ XML schema validation failed
+    │  └─ Type inference failed
+    │
+    ├─ ExportError (500)
+    │  ├─ Excel generation failed
+    │  └─ File write failed
+    │
+    ├─ ExternalServiceError (503)
+    │  └─ OpenAI API failure
+    │
+    ├─ DatabaseError (500)
+    │  ├─ Connection failed
+    │  ├─ Transaction failed
+    │  └─ Integrity violation
+    │
+    ├─ AuthenticationError (401)
+    │  └─ Invalid API key
+    │
+    ├─ AuthorizationError (403)
+    │  └─ Insufficient permissions
+    │
+    └─ Generic DataDictException (500)
+       └─ Unclassified error
+
+
+5. AI DESCRIPTION GENERATION FLOW (With Issues)
+================================================================================
+
+Generate Field Description Request
+         │
+         ↓
+    Cache Lookup?
+    ├─ YES → Return Cached (ISSUE: No TTL, grows unbounded)
+    │
+    └─ NO → OpenAI API Call
+          │
+          ├─ Retry Logic (ISSUE: No timeout, could hang forever)
+          │  ├─ Attempt 1
+          │  ├─ Attempt 2 (exponential backoff)
+          │  └─ Attempt 3 (exponential backoff)
+          │
+          └─ Response → Cache → Return
+             ISSUE: Retry may not handle rate-limits properly
+
+
+6. IMPORT DATA TRANSFORMATION (With Validation Gaps)
+================================================================================
+
+XLSX File
+    │
+    ├─→ Load Workbook (openpyxl)
+    │
+    ├─→ Determine Format
+    │   ├─ Summary Sheet → Batch Export
+    │   └─ Metadata+Data → Single Dictionary
+    │
+    ├─→ Parse Metadata Sheet
+    │   └─ Key-Value Pairs (ISSUE: Sheet name hardcoded)
+    │
+    ├─→ Parse Data Sheet
+    │   └─ Iterate Rows (ISSUE: No validation on cell content)
+    │       ├─ Field Path
+    │       ├─ Data Type
+    │       ├─ Null Count (ISSUE: int("abc") not caught)
+    │       ├─ Sample Values (ISSUE: JSON parse error handling weak)
+    │       └─ ... [30+ more fields]
+    │
+    ├─→ Check Conflicts
+    │   ├─ skip: Do nothing
+    │   ├─ fail: Raise error
+    │   └─ overwrite: Delete existing (risky)
+    │
+    ├─→ Create Records
+    │   ├─ Dictionary
+    │   ├─ Version
+    │   ├─ Fields (in loop)
+    │   └─ Annotations
+    │
+    └─→ Commit Transaction (ISSUE: Partial failures leave incomplete data)
+
+
+7. PARSER SELECTION & ROUTING
+================================================================================
+
+File Upload
+    │
+    ├─ Get file extension
+    │
+    ├─ Route by Type:
+    │   │
+    │   ├─ .json/.jsonl/.ndjson
+    │   │   └─ JSONParser
+    │   │       └─ Streaming with ijson
+    │   │
+    │   ├─ .xml
+    │   │   └─ XMLParser
+    │   │       ├─ DTD extraction (regex-based - FRAGILE)
+    │   │       ├─ XSD validation (ISSUE: No timeout)
+    │   │       └─ Streaming with lxml
+    │   │
+    │   ├─ .db/.sqlite/.sqlite3
+    │   │   └─ SQLiteParser
+    │   │       └─ Direct schema extraction
+    │   │
+    │   ├─ .gpkg
+    │   │   └─ GeoPackageParser
+    │   │       └─ Geospatial-specific processing
+    │   │
+    │   └─ .proto/.desc
+    │       └─ ProtobufParser
+    │           └─ Subprocess call (ISSUE: No timeout, security risk)
+    │
+    └─ Process & Analyze
+
+
+8. DATABASE SCHEMA RELATIONSHIPS
+================================================================================
+
+┌─────────────────┐
+│  DICTIONARY     │
+├─────────────────┤
+│ id (PK)         │
+│ name            │
+│ description     │
+│ created_at      │
+│ custom_metadata │
+└────────┬────────┘
+         │ 1:N
+         ↓
+┌─────────────────┐
+│  VERSION        │
+├─────────────────┤
+│ id (PK)         │
+│ dictionary_id   │ ← FK
+│ version_number  │
+│ schema_hash     │
+│ created_at      │
+│ processing_stats│
+└────────┬────────┘
+         │ 1:N
+         ↓
+┌─────────────────┐
+│  FIELD          │
+├─────────────────┤
+│ id (PK)         │
+│ version_id      │ ← FK
+│ field_path      │
+│ data_type       │
+│ semantic_type   │
+│ is_pii          │
+│ sample_values   │
+│ null_percentage │
+│ (+ 20 more)     │
+└────────┬────────┘
+         │ 1:N
+         ↓
+┌─────────────────┐
+│  ANNOTATION     │
+├─────────────────┤
+│ id (PK)         │
+│ field_id        │ ← FK
+│ description     │
+│ business_name   │
+│ is_ai_generated │
+│ created_by      │
+└─────────────────┘
+
+
+9. REQUEST FLOW - EXPORT ENDPOINT
+================================================================================
+
+GET /api/v1/exports/{dictionary_id}/excel
+
+    │
+    ├─ Validate dictionary_id exists
+    │
+    ├─ Load Dictionary + Latest Version + All Fields
+    │
+    ├─ Create ExcelExporter instance
+    │
+    ├─ Sheets Created:
+    │   ├─ Metadata Sheet
+    │   │   └─ Dictionary info (name, created_at, version_number)
+    │   │
+    │   └─ Data Dictionary Sheet
+    │       └─ Fields table (30 columns)
+    │           ├─ Field Path, Type, Semantic Type
+    │           ├─ Null %, Cardinality, Distinct Count
+    │           ├─ Sample Values (ISSUE: Large arrays may overflow)
+    │           ├─ Min, Max, Mean, Std Dev
+    │           ├─ PII Flag, PII Type
+    │           └─ Annotations (if exists)
+    │
+    ├─ Format Excel (ISSUE: No validation on cell size limits)
+    │   ├─ Headers bold
+    │   ├─ Auto-filter on
+    │   ├─ Frozen panes
+    │   └─ Conditional formatting
+    │
+    ├─ Write to temp file
+    │
+    ├─ Return FileResponse
+    │
+    └─ Client downloads .xlsx
+
+
+10. SECURITY ISSUES & DATA VALIDATION GAPS
+================================================================================
+
+INPUT VALIDATION GAPS:
+
+┌─ File Uploads
+│  ├─ Size Check MISSING (could OOM on 1GB file)
+│  ├─ Type Check OK (extension validation)
+│  └─ Content Validation OK (parser will fail safely)
+│
+├─ API Parameters
+│  ├─ Query Params OK (Pydantic validation)
+│  ├─ Path Params OK (UUID validation)
+│  ├─ Body OK (Pydantic schemas)
+│  └─ Metadata Dict MISSING (no size/depth limits)
+│
+├─ Database Operations
+│  ├─ SQL Injection SAFE (ORM uses parameterized queries)
+│  ├─ ACID Transactions OK (proper rollback)
+│  └─ Cascading Deletes OK (foreign keys)
+│
+├─ External Services
+│  ├─ OpenAI API
+│  │  ├─ Timeout MISSING (CRITICAL)
+│  │  ├─ Rate Limiting Incomplete
+│  │  └─ Cost Tracking MISSING
+│  │
+│  └─ System Commands (Protobuf)
+│     ├─ Timeout MISSING
+│     ├─ Input Validation MISSING (subprocess)
+│     └─ Security Risk (file paths from user)
+│
+└─ Authentication
+   ├─ API Key Support YES (but disabled)
+   └─ User Management PLACEHOLDER ONLY
+
+================================================================================
+END OF ARCHITECTURE DIAGRAMS
+================================================================================

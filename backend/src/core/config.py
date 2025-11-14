@@ -59,6 +59,28 @@ class Settings(BaseSettings):
     OPENAI_TEMPERATURE: float = 0.7
     OPENAI_ENABLED: bool = True
 
+    # OpenAI Timeout Settings
+    OPENAI_REQUEST_TIMEOUT: int = 60  # Timeout for API requests (seconds)
+    OPENAI_CONNECTION_TIMEOUT: int = 10  # Timeout for connection establishment (seconds)
+
+    # OpenAI Cache Settings
+    OPENAI_CACHE_ENABLED: bool = True
+    OPENAI_CACHE_TTL: int = 3600  # Cache time-to-live (seconds)
+    OPENAI_CACHE_MAX_SIZE: int = 10000  # Maximum cache entries
+
+    # OpenAI Retry Settings
+    OPENAI_MAX_RETRY_ATTEMPTS: int = 3
+    OPENAI_RETRY_MULTIPLIER: float = 2.0  # Exponential backoff multiplier
+    OPENAI_RETRY_MIN_WAIT: int = 4  # Minimum wait between retries (seconds)
+    OPENAI_RETRY_MAX_WAIT: int = 30  # Maximum wait between retries (seconds)
+
+    # OpenAI Rate Limiting
+    OPENAI_MAX_CONCURRENT_REQUESTS: int = 10  # Max parallel requests
+    OPENAI_RATE_LIMIT_RPM: int = 60  # Requests per minute (0 = unlimited)
+
+    # OpenAI Cost Tracking
+    OPENAI_METRICS_ENABLED: bool = True  # Enable token usage metrics
+
     # File Processing
     MAX_FILE_SIZE_MB: int = 500
     MAX_RECORDS_TO_ANALYZE: int = 10000
@@ -69,6 +91,13 @@ class Settings(BaseSettings):
     XML_MAX_DEPTH: int = 10
     XML_STRIP_NAMESPACES: bool = True
     XML_ATTRIBUTE_PREFIX: str = "@"
+
+    # XML Security & Performance
+    XML_PARSE_TIMEOUT: int = 60  # Timeout for XML parsing operations (seconds)
+    XML_VALIDATION_TIMEOUT: int = 30  # Timeout for XSD validation (seconds)
+    XML_MAX_FILE_SIZE_MB: int = 100  # Maximum XML file size to accept
+    XML_ALLOW_EXTERNAL_ENTITIES: bool = False  # Security: block XXE attacks
+    XML_ALLOW_NETWORK_ACCESS: bool = False  # Security: block SSRF attacks
 
     # Export Settings
     EXCEL_MAX_ROWS: int = 1048576

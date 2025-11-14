@@ -9,10 +9,17 @@ Extracts schema information from XML files including:
 - Data type information
 """
 
+import logging
 import re
 from pathlib import Path
 from typing import Any
 from lxml import etree
+
+from ..core.config import settings
+from ..core.exceptions import SchemaValidationError
+from .timeout_utils import with_timeout
+
+logger = logging.getLogger(__name__)
 
 
 class DTDParser:
@@ -149,6 +156,7 @@ class XSDParser:
             'xsd': 'http://www.w3.org/2001/XMLSchema'
         }
 
+    @with_timeout(30)  # 30 second timeout for XSD parsing
     def parse_xsd(self, xsd_path: Path) -> dict[str, Any]:
         """
         Parse XSD schema file.
@@ -160,7 +168,14 @@ class XSDParser:
             Dictionary with XSD metadata
         """
         try:
-            tree = etree.parse(str(xsd_path))
+            logger.debug(f"Parsing XSD schema: {xsd_path.name}")
+
+            # Security: Disable network access when parsing schema
+            parser = etree.XMLParser(
+                no_network=not settings.XML_ALLOW_NETWORK_ACCESS,
+                resolve_entities=settings.XML_ALLOW_EXTERNAL_ENTITIES
+            )
+            tree = etree.parse(str(xsd_path), parser)
             root = tree.getroot()
 
             # Update namespaces from document
@@ -194,9 +209,31 @@ class XSDParser:
                 if type_name:
                     result['simple_types'][type_name] = self._parse_simple_type(simple_type)
 
+            logger.info(
+                f"Parsed XSD schema with {len(result['elements'])} elements, "
+                f"{len(result['complex_types'])} complex types, {len(result['simple_types'])} simple types",
+                extra={'xsd_path': str(xsd_path)}
+            )
+
             return result
 
+        except etree.XMLSyntaxError as e:
+            logger.error(
+                f"XSD syntax error in {xsd_path.name}: {e}",
+                extra={'xsd_path': str(xsd_path), 'error': str(e)}
+            )
+            return {
+                'has_xsd': True,
+                'error': f"XSD syntax error: {str(e)}",
+                'elements': {},
+                'complex_types': {},
+                'simple_types': {}
+            }
         except Exception as e:
+            logger.error(
+                f"Error parsing XSD {xsd_path.name}: {e}",
+                extra={'xsd_path': str(xsd_path), 'error_type': type(e).__name__}
+            )
             return {
                 'has_xsd': True,
                 'error': str(e),
@@ -281,6 +318,7 @@ class XSDParser:
 
         return result
 
+    @with_timeout(30)  # Use XML_VALIDATION_TIMEOUT config
     def validate_xml(self, xml_path: Path, xsd_path: Path) -> dict[str, Any]:
         """
         Validate XML file against XSD schema.
@@ -293,17 +331,25 @@ class XSDParser:
             Validation result with errors if any
         """
         try:
+            logger.debug(f"Validating {xml_path.name} against {xsd_path.name}")
+
+            # Security: Disable network access when parsing schema and XML
+            parser = etree.XMLParser(
+                no_network=not settings.XML_ALLOW_NETWORK_ACCESS,
+                resolve_entities=settings.XML_ALLOW_EXTERNAL_ENTITIES
+            )
+
             # Parse schema
-            schema_doc = etree.parse(str(xsd_path))
+            schema_doc = etree.parse(str(xsd_path), parser)
             schema = etree.XMLSchema(schema_doc)
 
             # Parse XML
-            xml_doc = etree.parse(str(xml_path))
+            xml_doc = etree.parse(str(xml_path), parser)
 
             # Validate
             is_valid = schema.validate(xml_doc)
 
-            return {
+            result = {
                 'is_valid': is_valid,
                 'errors': [
                     {
@@ -316,7 +362,42 @@ class XSDParser:
                 ]
             }
 
+            if is_valid:
+                logger.info(
+                    f"XML validation successful: {xml_path.name}",
+                    extra={'xml_path': str(xml_path), 'xsd_path': str(xsd_path)}
+                )
+            else:
+                logger.warning(
+                    f"XML validation failed: {xml_path.name} has {len(result['errors'])} error(s)",
+                    extra={'xml_path': str(xml_path), 'xsd_path': str(xsd_path), 'errors': len(result['errors'])}
+                )
+
+            return result
+
+        except etree.XMLSchemaParseError as e:
+            logger.error(
+                f"XSD schema parsing error: {e}",
+                extra={'xsd_path': str(xsd_path), 'error': str(e)}
+            )
+            return {
+                'is_valid': False,
+                'errors': [{'message': f"Schema parsing error: {str(e)}", 'type': 'schema_error'}]
+            }
+        except etree.XMLSyntaxError as e:
+            logger.error(
+                f"XML syntax error during validation: {e}",
+                extra={'xml_path': str(xml_path), 'error': str(e)}
+            )
+            return {
+                'is_valid': False,
+                'errors': [{'message': f"XML syntax error: {str(e)}", 'type': 'syntax_error', 'line': getattr(e, 'lineno', None)}]
+            }
         except Exception as e:
+            logger.error(
+                f"Unexpected error during validation: {e}",
+                extra={'xml_path': str(xml_path), 'xsd_path': str(xsd_path), 'error_type': type(e).__name__}
+            )
             return {
                 'is_valid': False,
                 'errors': [{'message': str(e), 'type': 'exception'}]

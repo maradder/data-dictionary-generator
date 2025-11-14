@@ -6,20 +6,29 @@ Welcome to the comprehensive documentation for the Data Dictionary Generator. Th
 
 ```
 docs/
-├── README.md                          # This file - documentation index
-├── deployment/                        # Deployment and infrastructure
-│   ├── DOCKER_DEPLOYMENT.md          # Docker deployment guide (SQLite & PostgreSQL)
-│   └── PRODUCTION_DEPLOYMENT.md      # Production deployment guide
-├── guides/                            # User and developer guides
-│   ├── QUICK_START.md                # Get started in 2 minutes
-│   └── MIGRATION_GUIDE.md            # Database migration procedures
-├── reference/                         # Technical reference docs
-│   ├── XML_DTD_XSD_SUPPORT.md        # XML schema support documentation
-│   ├── CONOPS.md                     # Concept of operations
-│   ├── REQUIREMENTS.md               # System requirements
-│   └── SOFTWARE_DESIGN.md            # Software architecture
-└── samples/                           # Sample data documentation
-    └── SAMPLE_XML_README.md          # XML sample files guide
+├── README.md                              # This file - documentation index
+├── deployment/                            # Deployment and infrastructure
+│   ├── DOCKER_DEPLOYMENT.md              # Docker deployment guide (SQLite & PostgreSQL)
+│   └── PRODUCTION_DEPLOYMENT.md          # Production deployment guide
+├── guides/                                # User and developer guides
+│   ├── QUICK_START.md                    # Get started in 2 minutes
+│   ├── QUICKSTART.md                     # Detailed quickstart tutorial
+│   ├── MIGRATION_GUIDE.md                # Database migration procedures
+│   ├── SECURITY_QUICKSTART.md            # Security hardening quick guide
+│   └── OPENAI_CONFIGURATION.md           # OpenAI/LM Studio integration guide
+├── reference/                             # Technical reference docs
+│   ├── XML_DTD_XSD_SUPPORT.md            # XML schema support documentation
+│   ├── XML_PARSER_HARDENING_SUMMARY.md   # XML security hardening details
+│   ├── SECURITY.md                       # Security architecture reference
+│   ├── CONOPS.md                         # Concept of operations
+│   ├── REQUIREMENTS.md                   # System requirements
+│   ├── SOFTWARE_DESIGN.md                # Software architecture
+│   ├── CODEBASE_ANALYSIS.md              # Codebase analysis and metrics
+│   ├── ANALYSIS_INDEX.md                 # Analysis documentation index
+│   ├── ANALYSIS_SUMMARY.txt              # Executive summary of analysis
+│   └── ARCHITECTURE_DIAGRAM.txt          # System architecture diagram
+└── samples/                               # Sample data documentation
+    └── SAMPLE_XML_README.md              # XML sample files guide
 ```
 
 ---
@@ -73,6 +82,22 @@ docs/
   - Common commands
   - Basic troubleshooting
 
+- **[Quickstart Tutorial](guides/QUICKSTART.md)**
+  - Detailed walkthrough
+  - Feature exploration
+  - Best practices
+
+- **[OpenAI Configuration](guides/OPENAI_CONFIGURATION.md)**
+  - LM Studio integration
+  - Timeout & retry settings
+  - Cache configuration
+  - Cost tracking & metrics
+
+- **[Security Quickstart](guides/SECURITY_QUICKSTART.md)**
+  - Security hardening checklist
+  - Attack prevention
+  - Best practices
+
 - **[Migration Guide](guides/MIGRATION_GUIDE.md)**
   - PostgreSQL ↔ SQLite migration
   - Schema version upgrades
@@ -89,11 +114,28 @@ docs/
   - Metadata extraction
   - Sample files
 
+- **[XML Parser Hardening](reference/XML_PARSER_HARDENING_SUMMARY.md)**
+  - Security improvements (XXE/SSRF prevention)
+  - Timeout protection
+  - Error handling
+
+- **[Security Architecture](reference/SECURITY.md)**
+  - Threat model
+  - Security controls
+  - Authentication/authorization
+  - Data protection
+
 - **[Software Design](reference/SOFTWARE_DESIGN.md)**
   - System architecture
   - Component design
   - API specifications
   - Database schema
+
+- **[Codebase Analysis](reference/CODEBASE_ANALYSIS.md)**
+  - Code metrics
+  - Complexity analysis
+  - Security review
+  - Recommendations
 
 - **[Requirements](reference/REQUIREMENTS.md)**
   - Functional requirements
@@ -106,6 +148,16 @@ docs/
   - Operational scenarios
   - User workflows
   - Integration patterns
+
+- **[Analysis Summary](reference/ANALYSIS_SUMMARY.txt)**
+  - Executive summary
+  - Project status
+  - Key findings
+
+- **[Architecture Diagram](reference/ARCHITECTURE_DIAGRAM.txt)**
+  - System architecture
+  - Component relationships
+  - Data flow
 
 ---
 

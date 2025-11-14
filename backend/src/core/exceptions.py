@@ -131,3 +131,36 @@ class ConfigurationError(DataDictException):
     """
 
     pass
+
+
+class XMLParseError(ProcessingError):
+    """
+    XML parsing errors.
+
+    Raised when XML file cannot be parsed due to syntax errors or malformation.
+    Maps to HTTP 422 Unprocessable Entity.
+    """
+
+    pass
+
+
+class SchemaValidationError(ProcessingError):
+    """
+    XML schema validation errors.
+
+    Raised when XML fails to validate against XSD schema.
+    Maps to HTTP 422 Unprocessable Entity.
+    """
+
+    pass
+
+
+class DTDParseError(ProcessingError):
+    """
+    DTD parsing errors.
+
+    Raised when Document Type Definition cannot be parsed.
+    Maps to HTTP 422 Unprocessable Entity.
+    """
+
+    pass

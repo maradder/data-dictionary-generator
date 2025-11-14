@@ -5,6 +5,7 @@ This module provides the DictionaryService class that orchestrates the complete
 workflow for creating, managing, and analyzing data dictionaries.
 """
 
+import asyncio
 import hashlib
 import logging
 from datetime import datetime, timezone
@@ -211,6 +212,7 @@ class DictionaryService:
             # Step 4: Process fields
             logger.info(f"Processing {len(parse_result['fields'])} fields")
             fields_created = 0
+            processed_fields = []  # Store (field, field_meta) tuples for batch AI processing
 
             # Enable AI-enhanced semantic detection if AI descriptions are enabled
             self.semantic_detector.use_ai = generate_ai_descriptions
@@ -223,9 +225,9 @@ class DictionaryService:
                         position=position,
                     )
 
-                    # Step 5: Generate AI description (if enabled)
+                    # Store for batch AI processing
                     if generate_ai_descriptions:
-                        self._generate_ai_annotation(field, field_meta)
+                        processed_fields.append((field, field_meta))
 
                     fields_created += 1
 
@@ -235,6 +237,15 @@ class DictionaryService:
                         extra={"field_path": field_meta["field_path"]},
                     )
                     # Continue processing other fields
+
+            # Step 5: Generate AI descriptions in batch (if enabled)
+            if generate_ai_descriptions and processed_fields:
+                logger.info(f"Generating AI descriptions for {len(processed_fields)} fields")
+                try:
+                    asyncio.run(self._generate_ai_annotations_batch(processed_fields))
+                except Exception as e:
+                    logger.error(f"Failed to generate AI annotations in batch: {e}")
+                    # Continue with dictionary creation even if AI annotation fails
 
             # Commit transaction
             try:
@@ -367,55 +378,78 @@ class DictionaryService:
 
         return field
 
-    def _generate_ai_annotation(
+    async def _generate_ai_annotations_batch(
         self,
-        field: Field,
-        field_meta: dict[str, Any],
-    ) -> Annotation | None:
+        processed_fields: list[tuple[Field, dict[str, Any]]],
+    ) -> list[Annotation]:
         """
-        Generate AI annotation for a field.
+        Generate AI annotations for multiple fields in batch (async).
 
         Args:
-            field: Field to annotate
-            field_meta: Field metadata
+            processed_fields: List of (field, field_meta) tuples
 
         Returns:
-            Annotation if successful, None otherwise
+            List of created annotations
         """
+        annotations_created = []
+
         try:
-            description, business_name = self.ai_generator.generate_description(
-                field_meta["field_path"],
-                field_meta["field_name"],
-                field.data_type,
-                field.semantic_type,
-                field_meta["sample_values"],
-            )
+            # Prepare batch input
+            batch_input = [
+                {
+                    "field_path": field_meta["field_path"],
+                    "field_name": field_meta["field_name"],
+                    "data_type": field.data_type,
+                    "semantic_type": field.semantic_type,
+                    "sample_values": field_meta["sample_values"],
+                }
+                for field, field_meta in processed_fields
+            ]
 
-            annotation = Annotation(
-                field_id=field.id,
-                description=description,
-                business_name=business_name,
-                is_ai_generated=True,
-                ai_model_version=self.ai_generator.model,
-                created_at=datetime.now(timezone.utc),
-            )
+            # Generate descriptions in batch (concurrent)
+            results = await self.ai_generator.generate_batch(batch_input)
 
-            self.db.add(annotation)
+            # Create annotations
+            for (field, field_meta), (description, business_name) in zip(
+                processed_fields, results
+            ):
+                try:
+                    annotation = Annotation(
+                        field_id=field.id,
+                        description=description,
+                        business_name=business_name,
+                        is_ai_generated=True,
+                        ai_model_version=self.ai_generator.model,
+                        created_at=datetime.now(timezone.utc),
+                    )
+
+                    self.db.add(annotation)
+                    annotations_created.append(annotation)
+
+                    logger.debug(
+                        f"AI annotation created for field: {field.field_path}",
+                        extra={"field_id": str(field.id)},
+                    )
+
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to create annotation for {field.field_path}: {e}",
+                        extra={"field_id": str(field.id)},
+                    )
+
+            # Flush all annotations
             self.db.flush()
 
-            logger.debug(
-                f"AI annotation created for field: {field.field_path}",
-                extra={"field_id": str(field.id)},
+            logger.info(
+                f"Created {len(annotations_created)} AI annotations",
+                extra={"total": len(processed_fields), "successful": len(annotations_created)},
             )
 
-            return annotation
+            return annotations_created
 
         except Exception as e:
-            logger.warning(
-                f"Failed to generate AI annotation for {field.field_path}: {e}",
-                extra={"field_id": str(field.id)},
-            )
-            return None
+            logger.error(f"Failed to generate AI annotations in batch: {e}", exc_info=True)
+            return annotations_created
 
     def _calculate_schema_hash(self, fields: list[dict[str, Any]]) -> str:
         """
